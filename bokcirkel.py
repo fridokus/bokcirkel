@@ -92,23 +92,21 @@ async def listtexts(ctx):
 
 @bot.command()
 async def snack(ctx):
+    """Shows target chapter for the next meeting"""
     logging.info(f"{ctx.author} used !snack")
     await ctx.send("📖 Hela boken 🍉")
 
 @bot.command()
 async def source(ctx):
+    """Get link to source code of this bot"""
     logging.info(f"{ctx.author} used !source")
     await ctx.send("🔗 Source code: https://github.com/fridokus/bokcirkel 📜")
 
 @bot.command()
 async def book(ctx):
+    """Show current book"""
     logging.info(f"{ctx.author} used !book")
     await ctx.send("📚 Vilhelm Moberg: Utvandrarna 🇸🇪")
-
-@bot.command()
-async def bok(ctx):
-    logging.info(f"{ctx.author} used !bok")
-    await book(ctx)
 
 def main():
     try:
