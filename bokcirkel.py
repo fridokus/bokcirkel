@@ -42,12 +42,13 @@ async def custom_help(ctx):
     """Displays available commands with emojis"""
     embed = discord.Embed(title="📖 Bokcirkel Commands", color=discord.Color.blue())
     for command in bot.commands:
-        if command.name == "help":                     emoji = "❓"
-        elif command.name in ["addtext", "listtexts"]: emoji = "📝"
-        elif command.name in ["book", "bok"]:          emoji = "📚"
-        elif command.name == "snack":                  emoji = "🍉"
-        elif command.name == "source":                 emoji = "🔗"
-        else:                                          emoji = "⚡"
+        if   command.name == "help":          emoji = "❓"
+        elif command.name == "addtext":       emoji = "📝"
+        elif command.name == "listtexts":     emoji = "📜"
+        elif command.name in ["book", "bok"]: emoji = "📚"
+        elif command.name == "snack":         emoji = "🍉"
+        elif command.name == "source":        emoji = "🔗"
+        else:                                 emoji = "⚡"
         embed.add_field(name=f"{emoji} **!{command.name}**", value=command.help or "No description", inline=False)
     await ctx.send(embed=embed)
 
