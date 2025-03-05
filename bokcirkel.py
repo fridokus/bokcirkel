@@ -92,22 +92,88 @@ async def listtexts(ctx):
         await ctx.send("❌ Failed to retrieve texts.")
 
 @bot.command()
-async def snack(ctx):
-    """Shows target chapter for the next meeting"""
-    logging.info(f"{ctx.author} used !snack")
-    await ctx.send("📖 Hela boken 🍉")
-
-@bot.command()
 async def source(ctx):
     """Get link to source code of this bot"""
     logging.info(f"{ctx.author} used !source")
     await ctx.send("🔗 Source code: https://github.com/fridokus/bokcirkel 📜")
 
+def get_setting(key):
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST
+        )
+        cur = conn.cursor()
+        cur.execute("SELECT value FROM settings WHERE key = %s;", (key,))
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return result[0] if result else None
+    except Exception as e:
+        logging.error(f"Database fetch error: {e}")
+        return None
+
+def set_setting(key, value):
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST
+        )
+        cur = conn.cursor()
+        cur.execute(
+            """
+            INSERT INTO settings (key, value) VALUES (%s, %s)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+            """,
+            (key, value),
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        logging.error(f"Database update error: {e}")
+        return False
+
 @bot.command()
 async def book(ctx):
     """Show current book"""
     logging.info(f"{ctx.author} used !book")
-    await ctx.send("📚 Vilhelm Moberg: Utvandrarna 🇸🇪")
+    book_text = get_setting("book") or "📚 Vilhelm Moberg: Utvandrarna 🇸🇪"
+    await ctx.send(book_text)
+
+@bot.command()
+async def setbook(ctx, *, text: str):
+    """Set the current book (Admin only)"""
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("❌ You must be an **admin** to set the book!")
+        return
+
+    if set_setting("book", text):
+        await ctx.send(f"✅ **Current book updated to:** {text}")
+    else:
+        await ctx.send("⚠️ **Failed to update book.** Check logs.")
+
+@bot.command()
+async def snack(ctx):
+    """Shows target chapter for the next meeting"""
+    logging.info(f"{ctx.author} used !snack")
+    snack_text = get_setting("snack") or "📖 Hela boken 🍉"
+    await ctx.send(snack_text)
+
+@bot.command()
+async def setsnack(ctx, *, text: str):
+    """Set the next meeting's target chapter (Admin only)"""
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("❌ You must be an **admin** to set the snack text!")
+        return
+
+    if set_setting("snack", text):
+        await ctx.send(f"✅ **Next meeting's chapter set to:** {text}")
 
 @bot.command(name="cleardb", help="⚠️ Deletes all stored text entries (Owner only!)")
 async def cleardb(ctx):
