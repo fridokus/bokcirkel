@@ -109,6 +109,32 @@ async def book(ctx):
     logging.info(f"{ctx.author} used !book")
     await ctx.send("📚 Vilhelm Moberg: Utvandrarna 🇸🇪")
 
+@bot.command(name="cleardb", help="⚠️ Deletes all stored text entries (Owner only!)")
+async def cleardb(ctx):
+    """Deletes all stored text entries. Only the server owner can run this."""
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("❌ You must be the **server owner** to use this command!")
+        return
+
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST
+        )
+        cur = conn.cursor()
+        cur.execute("DELETE FROM texts;")
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        await ctx.send("✅ **All text entries have been deleted!**")
+        logging.info(f"{ctx.author} cleared the text database.")
+    except Exception as e:
+        logging.error(f"Database clear failed: {e}")
+        await ctx.send("⚠️ **Failed to clear the database.** Check logs for details.")
+
 def main():
     try:
         with open('.token', 'r') as f:
