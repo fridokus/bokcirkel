@@ -84,7 +84,7 @@ async def listtexts(ctx):
             await ctx.send("📭 No texts stored yet.")
         else:
             response = "📜 **Stored Texts:**\n" + "\n".join(
-                [f"📌 {r[0]}: {r[1]} (*{r[2].strftime('%Y-%m-%d %H:%M:%S')}*)" for r in rows]
+                [f"📌 {r[0]}: {r[1]} (*{r[2].strftime('%Y-%m-%d %H:%M:%S')}*)" for r in rows[::-1]]
             )
             await ctx.send(response)
     except Exception as e:
