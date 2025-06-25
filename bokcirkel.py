@@ -52,6 +52,7 @@ async def custom_help(ctx):
         elif command.name == "rotate":        emoji = "🔄"
         elif command.name == "roles":         emoji = "🎭"
         elif command.name == "initroles":     emoji = "👶"
+        elif command.name == "switchrole":    emoji = "🔀"
         else:                                 emoji = "⚡"
         embed.add_field(name=f"{emoji} **!{command.name}**", value=command.help or "No description", inline=False)
     await ctx.send(embed=embed)
@@ -264,6 +265,31 @@ async def roles(ctx):
     for role in roles:
         lines.append(f"{role['emoji']} {role['name']} - {role['role']}")
     await ctx.send("\n".join(lines))
+
+@bot.command()
+async def switchrole(ctx, role_name: str, new_name: str):
+    """Switch the person assigned to a role."""
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("❌ Endast admin kan ändra roller.")
+        return
+
+    roles_json = get_setting("roles")
+    if not roles_json:
+        await ctx.send("⚠️ Inga roller initierade.")
+        return
+
+    roles = json.loads(roles_json)
+
+    for role in roles:
+        if role["role"].lower() == role_name.lower():
+            role["name"] = new_name
+            if set_setting("roles", json.dumps(roles)):
+                await ctx.send(f"✅ Ändrade `{role_name}` till `{new_name}`.")
+            else:
+                await ctx.send("⚠️ Misslyckades med att spara ändringen.")
+            return
+
+    await ctx.send(f"❌ Hittade ingen roll med namnet `{role_name}`.")
 
 def main():
     try:
