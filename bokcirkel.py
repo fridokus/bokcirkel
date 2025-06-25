@@ -4,6 +4,7 @@ import discord
 import logging
 import psycopg2
 from discord.ext import commands
+import json
 
 DB_HOST = "127.0.0.1"
 DB_USER = "botuser"
@@ -48,6 +49,10 @@ async def custom_help(ctx):
         elif command.name in ["book", "bok"]: emoji = "📚"
         elif command.name == "snack":         emoji = "🍉"
         elif command.name == "source":        emoji = "🔗"
+        elif command.name == "rotate":        emoji = "🔄"
+        elif command.name == "roles":         emoji = "🎭"
+        elif command.name == "initroles":     emoji = "👶"
+        elif command.name == "switchrole":    emoji = "🔀"
         else:                                 emoji = "⚡"
         embed.add_field(name=f"{emoji} **!{command.name}**", value=command.help or "No description", inline=False)
     await ctx.send(embed=embed)
@@ -200,6 +205,91 @@ async def cleardb(ctx):
     except Exception as e:
         logging.error(f"Database clear failed: {e}")
         await ctx.send("⚠️ **Failed to clear the database.** Check logs for details.")
+
+@bot.command()
+async def initroles(ctx):
+    """Initialize the roles (Admin only)"""
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("❌ Endast admin kan initialisera rollerna.")
+        return
+
+    roles = [
+            {"role": "Facilitator", "name": "Oskar", "emoji": "🎤"},
+            {"role": "Djävulens advokat", "name": "Jan", "emoji": "😈"},
+            {"role": "Citatväljaren", "name": "Anton", "emoji": "💬"},
+            {"role": "Summeraren", "name": "Linnea", "emoji": "📝"},
+            {"role": "Temaspanaren", "name": "Bell", "emoji": "🎭"},
+            {"role": "Länkaren", "name": "Armin", "emoji": "🔗"},
+            {"role": "Detaljspanaren", "name": "Dennis", "emoji": "🕵️"},
+        ]
+
+    if set_setting("roles", json.dumps(roles)):
+        await ctx.send("✅ Roller initialiserade! Använd `!roles` för att se dem.")
+    else:
+        await ctx.send("⚠️ Misslyckades med att spara roterade roller.")
+
+@bot.command()
+async def rotate(ctx):
+    """Rotate the roles (Admin only)"""
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("❌ Endast admin kan rotera rollerna.")
+        return
+
+    roles_json = get_setting("roles")
+    
+    if roles_json is None:
+        await ctx.send("❌ Finns inga roller att rotera. Initialisera roller först!")
+    else:
+        roles = json.loads(roles_json)
+
+    names = [r["name"] for r in roles]
+    names = names[1:] + names[:1]
+    for i, role in enumerate(roles):
+        role["name"] = names[i]
+
+    if set_setting("roles", json.dumps(roles)):
+        await ctx.send("✅ Roller roterade! Använd `!roles` för att se dem.")
+    else:
+        await ctx.send("⚠️ Misslyckades med att spara roterade roller.")
+
+@bot.command()
+async def roles(ctx):
+    """Displays current roles"""
+    roles_json = get_setting("roles")
+    if not roles_json:
+        await ctx.send("❌ Roller saknas! Initialisera roller först.")
+        return
+    roles = json.loads(roles_json)
+    
+    lines = ["📚 **Roller för nästa bokträff:**"]
+    for role in roles:
+        lines.append(f"{role['emoji']} {role['name']} - {role['role']}")
+    await ctx.send("\n".join(lines))
+
+@bot.command()
+async def switchrole(ctx, role_name: str, new_name: str):
+    """Switch the person assigned to a role."""
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.send("❌ Endast admin kan ändra roller.")
+        return
+
+    roles_json = get_setting("roles")
+    if not roles_json:
+        await ctx.send("⚠️ Inga roller initierade.")
+        return
+
+    roles = json.loads(roles_json)
+
+    for role in roles:
+        if role["role"].lower() == role_name.lower():
+            role["name"] = new_name
+            if set_setting("roles", json.dumps(roles)):
+                await ctx.send(f"✅ Ändrade `{role_name}` till `{new_name}`.")
+            else:
+                await ctx.send("⚠️ Misslyckades med att spara ändringen.")
+            return
+
+    await ctx.send(f"❌ Hittade ingen roll med namnet `{role_name}`.")
 
 def main():
     try:
