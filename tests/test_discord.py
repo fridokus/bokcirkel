@@ -1,35 +1,35 @@
-import bokcirkel
 import discord
 import discord.ext.test as dpytest
 import pytest
 import pytest_asyncio
 
+from bot import Bot
+from db import Database
 from pathlib import Path
 from pytest_postgresql import factories
-from unittest.mock import patch
 
 postgresql_proc = factories.postgresql_proc(load=[Path("bokcirkel_schema.sql")])
-postgress = factories.postgresql(
+postgresql = factories.postgresql(
     "postgresql_proc",
 )
 
 
-
 @pytest_asyncio.fixture(autouse=True)
-async def bot(postgress):
-    with patch('db.get_db_connection', return_value=postgress):
-        bot = bokcirkel.bot_for_test()
-        await bot._async_setup_hook() 
+async def fix_bot(postgresql):
+    bot = Bot(db=Database(postgresql))
 
-        dpytest.configure(bot, members=2)
-        rc = dpytest.get_config()
+    await bot.setup_hook()  # Ensure the bot is set up correctly
+    await bot._async_setup_hook() 
 
-        # Create an admin role and assign it to member 1.
-        admin_role = await bot.guilds[0].create_role(name='administrator', permissions=discord.Permissions(administrator=True))
-        await dpytest.add_role(rc.members[1], admin_role)
+    dpytest.configure(bot, members=2)
+    rc = dpytest.get_config()
 
-        yield bot
-        await dpytest.empty_queue()
+    # Create an admin role and assign it to member 1.
+    admin_role = await bot.guilds[0].create_role(name='administrator', permissions=discord.Permissions(administrator=True))
+    await dpytest.add_role(rc.members[1], admin_role)
+
+    yield bot
+    await dpytest.empty_queue()
 
 @pytest.mark.asyncio
 async def test_help():
@@ -53,11 +53,14 @@ async def test_setbook():
 
 @pytest.mark.asyncio
 async def test_setbook_sets():
-    await dpytest.message("!setbook Oskar", member=1)
+    await dpytest.message("!book")
+    assert not dpytest.verify().message().contains().content("Oskar") 
 
+    await dpytest.message("!setbook Oskar", member=1)
     assert dpytest.verify().message().contains().content("Oskar") 
 
-    # Add a !book call here to verify the book was set after DB connection is kept.
+    await dpytest.message("!book")
+    assert dpytest.verify().message().contains().content("Oskar") 
 
 @pytest.mark.asyncio
 async def test_snack():
@@ -77,6 +80,10 @@ async def test_setsnack():
 
     assert dpytest.verify().message().contains().content("New Snack")
 
+    await dpytest.message("!snack")
+    assert dpytest.verify().message().contains().content("New Snack")
+    
+
 @pytest.mark.asyncio
 async def test_cleardb_denied():
     await dpytest.message("!cleardb")
@@ -89,3 +96,17 @@ async def test_addtext():
 
     assert dpytest.verify().message().contains().content("Text added")
 
+
+@pytest.mark.asyncio
+async def test_texts():
+    await dpytest.message("!listtexts")
+    assert dpytest.verify().message().contains().content("No texts stored yet.")
+
+    await dpytest.message("!addtext This is a test")
+    assert dpytest.verify().message().contains().content("Text added")
+
+    await dpytest.message("!listtexts")
+    assert dpytest.verify().message().contains().content("This is a test")
+
+    await dpytest.message("!cleardb", member=1)
+    assert dpytest.verify().message().contains().content("You must be")
