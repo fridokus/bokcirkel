@@ -2,6 +2,7 @@
 
 import logging
 import db
+import discord
 
 from bot import Bot
 
