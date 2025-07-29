@@ -231,12 +231,8 @@ class BookCircle(commands.Cog):
 
 
 class Bot(commands.Bot):
-    def __init__(self, db: Database):
+    def __init__(self, db: Database, intents: discord.Intents):
         self.db = db
-        intents = discord.Intents.default()
-        intents.members = True
-        intents.messages = True
-        intents.message_content = True
         super().__init__(command_prefix="!", intents=intents)
         self.remove_command("help")
 
