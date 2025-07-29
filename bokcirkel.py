@@ -19,7 +19,10 @@ def main():
             token = f.read().strip()
         logging.info("Starting bot...")
 
-        bot = Bot(db=db.Database())
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.message = True
+        bot = Bot(db=db.Database(), intents=intents)
         bot.run(token)
 
     except Exception as e:

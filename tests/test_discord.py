@@ -16,7 +16,12 @@ postgresql = factories.postgresql(
 
 @pytest_asyncio.fixture(autouse=True)
 async def fix_bot(postgresql):
-    bot = Bot(db=Database(postgresql))
+    intents = discord.Intents.default()
+    intents.members = True
+    intents.messages = True
+    intents.message_content = True
+
+    bot = Bot(Database(postgresql), intents)
 
     await bot.setup_hook()  # Ensure the bot is set up correctly
     await bot._async_setup_hook() 
