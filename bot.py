@@ -39,28 +39,30 @@ class BookCircle(commands.Cog):
     @commands.command()    
     async def addtext(self, ctx, *, text: str):
         """Adds a text string to the database"""
-        try:
-            self.db.add_text(ctx.author.id, ctx.author.name, text)
-            await ctx.send("✅ Text added!")
-        except Exception as e:
-            logging.error(f"Error adding text: {e}")
-            await ctx.send("❌ Failed to add text.")
+        self.db.add_text(ctx.author.id, ctx.author.name, text)
+        await ctx.send("✅ Text added!")
+
+    @addtext.error
+    async def addtext_error(self, ctx, error):
+        logging.error(f"Error adding text: {e}")
+        await ctx.send("❌ Failed to add text.")
 
     @commands.command()
     async def listtexts(self, ctx):
         """Lists all stored text strings"""
-        try:
-            texts = self.db.texts()
-            if not texts:
-                await ctx.send("📭 No texts stored yet.")
-            else:
-                response = "📜 **Stored Texts:**\n" + "\n".join(
-                    [f"📌 {r[0]}: {r[1]} (*{r[2].strftime('%Y-%m-%d %H:%M:%S')}*)" for r in texts[::-1]]
-                )
-                await ctx.send(response)
-        except Exception as e:
-            logging.error(f"Error listing texts: {e}")
-            await ctx.send("❌ Failed to retrieve texts.")
+        texts = self.db.texts()
+        if not texts:
+            await ctx.send("📭 No texts stored yet.")
+        else:
+            response = "📜 **Stored Texts:**\n" + "\n".join(
+                [f"📌 {r[0]}: {r[1]} (*{r[2].strftime('%Y-%m-%d %H:%M:%S')}*)" for r in texts[::-1]]
+            )
+            await ctx.send(response)
+
+    @listtexts.error
+    async def listtexts_error(self, ctx, error):
+        logging.error(f"Error listing texts: {error}")
+        await ctx.send("❌ Failed to list texts.")
 
 
     @commands.command()
@@ -73,12 +75,13 @@ class BookCircle(commands.Cog):
     async def book(self, ctx):
         """Show current book"""
         logging.info(f"{ctx.author} used !book")
-        try:
-            book_text = self.db.get_book()
-            await ctx.send(book_text)
-        except Exception as e:
-            logging.error(f"Error retrieving book text: {e}")
-            await ctx.send("❌ Failed to retrieve book text.")
+        book_text = self.db.get_book()
+        await ctx.send(book_text)
+
+    @book.error
+    async def book_error(self, ctx, error):
+        logging.error(f"Error retrieving book: {error}")
+        await ctx.send("❌ Failed to retrieve book.")
 
     @commands.command()
     async def setbook(self, ctx, *, text: str):
@@ -86,23 +89,25 @@ class BookCircle(commands.Cog):
         if not ctx.author.guild_permissions.administrator:
             await ctx.send("❌ You must be an **admin** to set the book!")
             return
-        try:
-            self.db.set_book(text)
-            await ctx.send(f"✅ **Current book updated to:** {text}")
-        except Exception as e:
-            logging.error(f"Error setting book: {e}")
-            await ctx.send("❌ **Failed to update book.** Check logs for details.")
+        self.db.set_book(text)
+        await ctx.send(f"✅ **Current book updated to:** {text}")
+
+    @setbook.error
+    async def setbook_error(self, ctx, error):
+        logging.error(f"Error setting book: {error}")
+        await ctx.send("❌ **Failed to update book.** Check logs for details.")
 
     @commands.command()
     async def snack(self, ctx):
         """Shows target chapter for the next meeting"""
         logging.info(f"{ctx.author} used !snack")
-        try:
-            snack_text = self.db.get_setting("snack") or "📖 Hela boken 🍉"
-            await ctx.send(snack_text)
-        except Exception as e:
-            logging.error(f"Error retrieving snack text: {e}")
-            await ctx.send("❌ Failed to retrieve snack text.")
+        snack_text = self.db.get_setting("snack") or "📖 Hela boken 🍉"
+        await ctx.send(snack_text)
+
+    @snack.error
+    async def snack_error(self, ctx, error):
+        logging.error(f"Error retrieving snack text: {error}")
+        await ctx.send("❌ Failed to retrieve snack text.")
 
     @commands.command()
     async def setsnack(self, ctx, *, text: str):
@@ -111,12 +116,13 @@ class BookCircle(commands.Cog):
             await ctx.send("❌ You must be an **admin** to set the snack text!")
             return
 
-        try: 
-            self.db.set_setting("snack", text)
-            await ctx.send(f"✅ **Next meeting's chapter set to:** {text}")
-        except Exception as e:
-            logging.error(f"Error setting snack text: {e}")
-            await ctx.send("❌ **Failed to update snack text.** Check logs for details.")
+        self.db.set_setting("snack", text)
+        await ctx.send(f"✅ **Next meeting's chapter set to:** {text}")
+
+    @setsnack.error
+    async def setsnack_error(self, ctx, error):
+        logging.error(f"Error setting snack text: {error}")
+        await ctx.send("❌ **Failed to update snack text.** Check logs for details.")
 
     @commands.command()
     async def cleardb(self, ctx):
@@ -125,13 +131,14 @@ class BookCircle(commands.Cog):
             await ctx.send("❌ You must be the **server owner** to use this command!")
             return
 
-        try:
-            self.db.clear_texts()
-            await ctx.send("✅ **All text entries have been deleted!**")
-            logging.info(f"{ctx.author} cleared the text database.")
-        except Exception as e:
-            logging.error(f"Database clear failed: {e}")
-            await ctx.send("⚠️ **Failed to clear the database.** Check logs for details.")
+        self.db.clear_texts()
+        await ctx.send("✅ **All text entries have been deleted!**")
+        logging.info(f"{ctx.author} cleared the text database.")
+
+    @cleardb.error
+    async def cleardb_error(self, ctx, error):
+        logging.error(f"Database clear failed: {e}")
+        await ctx.send("⚠️ **Failed to clear the database.** Check logs for details.")
 
     async def load_roles(self, ctx):
         """Helper function to get roles JSON from the database."""
@@ -163,12 +170,13 @@ class BookCircle(commands.Cog):
                 {"role": "Detaljspanaren", "name": "Dennis", "emoji": "🕵️"},
             ]
 
-        try:
-            self.db.set_setting("roles", json.dumps(roles))
-            await ctx.send("✅ Roller initialiserade! Använd `!roles` för att se dem.")
-        except Exception as e:
-            logging.error(f"Error initializing roles: {e}")
-            await ctx.send("⚠️ Misslyckades med att spara roterade roller.")
+        self.db.set_setting("roles", json.dumps(roles))
+        await ctx.send("✅ Roller initialiserade! Använd `!roles` för att se dem.")
+
+    @initroles.error
+    async def initroles_error(self, ctx, error):
+        logging.error(f"Error initializing roles: {error}")
+        await ctx.send("❌ Misslyckades med att initialisera roller. Kontrollera loggarna.")
 
     @commands.command()
     async def rotate(self, ctx):
