@@ -133,6 +133,19 @@ class BookCircle(commands.Cog):
             logging.error(f"Database clear failed: {e}")
             await ctx.send("⚠️ **Failed to clear the database.** Check logs for details.")
 
+    async def load_roles(self, ctx):
+        """Helper function to get roles JSON from the database."""
+        try: 
+            json_roles = self.db.get_setting("roles")
+        except Exception :
+            await ctx.send("❌ Misslyckades med att hämta roller. Kontrollera loggarna.")
+            return
+        if not json_roles:
+            await ctx.send("❌ Roller saknas! Initialisera roller först.")
+            return
+
+        return json.loads(json_roles)
+
     @commands.command()
     async def initroles(self, ctx):
         """Initialize the roles (Admin only)"""
@@ -164,12 +177,7 @@ class BookCircle(commands.Cog):
             await ctx.send("❌ Endast admin kan rotera rollerna.")
             return
 
-        roles_json = self.db.get_setting("roles")
-        
-        if roles_json is None:
-            await ctx.send("❌ Finns inga roller att rotera. Initialisera roller först!")
-        else:
-            roles = json.loads(roles_json)
+        roles = await self.load_roles(ctx)
 
         names = [r["name"] for r in roles]
         names = names[1:] + names[:1]
@@ -181,24 +189,11 @@ class BookCircle(commands.Cog):
         except Exception:
             await ctx.send("⚠️ Misslyckades med att spara roterade roller.")
     
-    async def roles_json(self):
-        """Helper function to get roles JSON from the database."""
-        try: 
-            roles_json = self.db.get_setting("roles")
-        except Exception :
-            await ctx.send("❌ Misslyckades med att hämta roller. Kontrollera loggarna.")
-            return
-        if not roles_json:
-            await ctx.send("❌ Roller saknas! Initialisera roller först.")
-            return
-
-        return roles_json
-
     @commands.command()
     async def roles(self, ctx):
         """Displays current roles"""
-        roles_json = await self.roles_json()
-        if not roles_json:
+        roles = await self.load_roles(ctx)
+        if not roles:
             return
 
         lines = ["📚 **Roller för nästa bokträff:**"]
@@ -213,8 +208,8 @@ class BookCircle(commands.Cog):
             await ctx.send("❌ Endast admin kan ändra roller.")
             return
 
-        roles = await self.roles_json()
-        if not roles_json:
+        roles = await self.load_roles(ctx)
+        if not roles:
             return
 
         for role in roles:

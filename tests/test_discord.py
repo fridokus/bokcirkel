@@ -115,3 +115,19 @@ async def test_texts():
 
     await dpytest.message("!cleardb", member=1)
     assert dpytest.verify().message().contains().content("You must be")
+    
+@pytest.mark.asyncio
+async def test_roles():
+    await dpytest.message("!roles")
+    assert dpytest.verify().message().contains().content("Roller saknas!")
+
+@pytest.mark.asyncio
+async def test_roles_work():
+    await dpytest.message("!roles")
+    assert dpytest.verify().message().contains().content("Roller saknas!")
+
+    await dpytest.message("!initroles", member=1)
+    assert dpytest.verify().message().contains().content("initialiserade")
+
+    await dpytest.message("!roles")
+    assert dpytest.verify().message().contains().content("Detaljspanaren")
