@@ -22,7 +22,7 @@ def main():
 
         intents = discord.Intents.default()
         intents.message_content = True
-        intents.message = True
+        intents.messages = True
         bot = Bot(db=db.Database(), intents=intents)
         bot.run(token)
 
