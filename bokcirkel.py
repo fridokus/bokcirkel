@@ -1,15 +1,10 @@
 #!/usr/bin/python3
 
+import db
 import discord
 import logging
-import psycopg2
 from discord.ext import commands
 import json
-
-DB_HOST = "127.0.0.1"
-DB_USER = "botuser"
-DB_PASSWORD = "123"
-DB_NAME = "bokcirkel"
 
 LOG_FILE = "/var/log/bokcirkel.log"
 logging.basicConfig(
@@ -20,17 +15,10 @@ logging.basicConfig(
 )
 
 intents = discord.Intents.default()
+intents.members = True
 intents.messages = True
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-def get_db_connection():
-    return psycopg2.connect(
-        host=DB_HOST,
-        database=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
 
 @bot.event
 async def on_ready():
@@ -61,7 +49,7 @@ async def custom_help(ctx):
 async def addtext(ctx, *, text: str):
     """Adds a text string to the database"""
     try:
-        conn = get_db_connection()
+        conn = db.get_db_connection()
         cur = conn.cursor()
         cur.execute("INSERT INTO texts (user_id, username, text) VALUES (%s, %s, %s)",
                     (ctx.author.id, ctx.author.name, text))
@@ -78,7 +66,7 @@ async def addtext(ctx, *, text: str):
 async def listtexts(ctx):
     """Lists all stored text strings"""
     try:
-        conn = get_db_connection()
+        conn = db.get_db_connection()
         cur = conn.cursor()
         cur.execute("SELECT username, text, timestamp FROM texts ORDER BY timestamp DESC LIMIT 10")
         rows = cur.fetchall()
@@ -104,12 +92,7 @@ async def source(ctx):
 
 def get_setting(key):
     try:
-        conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST
-        )
+        conn = db.get_db_connection()
         cur = conn.cursor()
         cur.execute("SELECT value FROM settings WHERE key = %s;", (key,))
         result = cur.fetchone()
@@ -122,12 +105,7 @@ def get_setting(key):
 
 def set_setting(key, value):
     try:
-        conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST
-        )
+        conn = db.get_db_connection()
         cur = conn.cursor()
         cur.execute(
             """
@@ -188,12 +166,7 @@ async def cleardb(ctx):
         return
 
     try:
-        conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST
-        )
+        conn = db.get_db_connection()
         cur = conn.cursor()
         cur.execute("DELETE FROM texts;")
         conn.commit()
@@ -299,6 +272,10 @@ def main():
         bot.run(token)
     except Exception as e:
         logging.error(f"Error starting bot: {e}")
+
+def bot_for_test():
+    """Returns the bot instance for testing purposes."""
+    return bot
 
 if __name__ == "__main__":
     main()
