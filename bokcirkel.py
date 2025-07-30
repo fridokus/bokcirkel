@@ -3,6 +3,7 @@
 import logging
 import db
 import discord
+import library
 
 from bot import Bot
 
