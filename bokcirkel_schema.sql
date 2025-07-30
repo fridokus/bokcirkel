@@ -12,3 +12,11 @@ CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+
+-- Table for storing user book progress
+CREATE TABLE IF NOT EXISTS user_progress (
+    user_id BIGINT PRIMARY KEY,
+    username TEXT NOT NULL,
+    progress TEXT
+);
