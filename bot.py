@@ -21,7 +21,7 @@ class BookCircle(commands.Cog):
     @commands.command()
     async def help(self, ctx):
         """Displays available commands with emojis"""
-        embed = discord.Embed(title="📖 Bokcirkel Commands", color=discord.Color.blue())
+        embed = discord.Embed(title="📖 Book Circle Commands", color=discord.Color.blue())
         for command in self.bot.commands:
             if   command.name == "help":          emoji = "❓"
             elif command.name == "addtext":       emoji = "📝"
@@ -73,7 +73,7 @@ class BookCircle(commands.Cog):
 
     @commands.command()
     async def bookinfo(self, ctx, *, text: str):
-        """Show current book"""
+        """Look up a book"""
         logging.info(f"{ctx.author} used !bookinfo")
         try:
             book_info = library.fetch_book(text)
@@ -112,7 +112,7 @@ class BookCircle(commands.Cog):
         """Shows target chapter for the next meeting"""
         logging.info(f"{ctx.author} used !snack")
         try:
-            snack_text = self.db.get_setting("snack") or "📖 Hela boken 🍉"
+            snack_text = self.db.get_setting("snack") or "📖 The whole book 🍉"
             await ctx.send(snack_text)
         except Exception as e:
             logging.error(f"Error retrieving snack text: {e}")
@@ -152,10 +152,10 @@ class BookCircle(commands.Cog):
         try: 
             json_roles = self.db.get_setting("roles")
         except Exception :
-            await ctx.send("❌ Misslyckades med att hämta roller. Kontrollera loggarna.")
+            await ctx.send("❌ Failed to fetch roles. Check logs.")
             return
         if not json_roles:
-            await ctx.send("❌ Roller saknas! Initialisera roller först.")
+            await ctx.send("❌ Roles are missing! Initialize roles first.")
             return
 
         return json.loads(json_roles)
@@ -164,31 +164,31 @@ class BookCircle(commands.Cog):
     async def initroles(self, ctx):
         """Initialize the roles (Admin only)"""
         if not ctx.author.guild_permissions.administrator:
-            await ctx.send("❌ Endast admin kan initialisera rollerna.")
+            await ctx.send("❌ Only admin can initialize the roles.")
             return
 
         roles = [
                 {"role": "Facilitator", "name": "Oskar", "emoji": "🎤"},
-                {"role": "Djävulens advokat", "name": "Jan", "emoji": "😈"},
-                {"role": "Citatväljaren", "name": "Anton", "emoji": "💬"},
-                {"role": "Summeraren", "name": "Linnea", "emoji": "📝"},
-                {"role": "Temaspanaren", "name": "Bell", "emoji": "🎭"},
-                {"role": "Länkaren", "name": "Armin", "emoji": "🔗"},
-                {"role": "Detaljspanaren", "name": "Dennis", "emoji": "🕵️"},
+                {"role": "Devil's Advocate", "name": "Jan", "emoji": "😈"},
+                {"role": "Quote Picker", "name": "Anton", "emoji": "💬"},
+                {"role": "Summarizer", "name": "Linnea", "emoji": "📝"},
+                {"role": "Theme Spotter", "name": "Bell", "emoji": "🎭"},
+                {"role": "Linker", "name": "Armin", "emoji": "🔗"},
+                {"role": "Detail Spotter", "name": "Dennis", "emoji": "🕵️"},
             ]
 
         try:
             self.db.set_setting("roles", json.dumps(roles))
-            await ctx.send("✅ Roller initialiserade! Använd `!roles` för att se dem.")
+            await ctx.send("✅ Roles initialized! Use `!roles` to see them.")
         except Exception as e:
             logging.error(f"Error initializing roles: {e}")
-            await ctx.send("⚠️ Misslyckades med att spara roterade roller.")
+            await ctx.send("⚠️ Failed to save rotated roles.")
 
     @commands.command()
     async def rotate(self, ctx):
         """Rotate the roles (Admin only)"""
         if not ctx.author.guild_permissions.administrator:
-            await ctx.send("❌ Endast admin kan rotera rollerna.")
+            await ctx.send("❌ Only admin can rotate the roles.")
             return
 
         roles = await self.load_roles(ctx)
@@ -199,9 +199,9 @@ class BookCircle(commands.Cog):
             role["name"] = names[i]
         try:
             self.db.set_setting("roles", json.dumps(roles))
-            await ctx.send("✅ Roller roterade! Använd `!roles` för att se dem.")
+            await ctx.send("✅ Roles rotated! Use `!roles` to see them.")
         except Exception:
-            await ctx.send("⚠️ Misslyckades med att spara roterade roller.")
+            await ctx.send("⚠️ Failed to save rotated roles.")
     
     @commands.command()
     async def roles(self, ctx):
@@ -210,7 +210,7 @@ class BookCircle(commands.Cog):
         if not roles:
             return
 
-        lines = ["📚 **Roller för nästa bokträff:**"]
+        lines = ["📚 **Roles for the next book meeting:**"]
         for role in roles:
             lines.append(f"{role['emoji']} {role['name']} - {role['role']}")
         await ctx.send("\n".join(lines))
@@ -219,7 +219,7 @@ class BookCircle(commands.Cog):
     async def switchrole(self, ctx, role_name: str, new_name: str):
         """Switch the person assigned to a role."""
         if not ctx.author.guild_permissions.administrator:
-            await ctx.send("❌ Endast admin kan ändra roller.")
+            await ctx.send("❌ Only admin can change roles.")
             return
 
         roles = await self.load_roles(ctx)
@@ -230,12 +230,12 @@ class BookCircle(commands.Cog):
             if role["role"].lower() == role_name.lower():
                 role["name"] = new_name
                 if self.db.set_setting("roles", json.dumps(roles)):
-                    await ctx.send(f"✅ Ändrade `{role_name}` till `{new_name}`.")
+                    await ctx.send(f"✅ Changed `{role_name}` to `{new_name}`.")
                 else:
-                    await ctx.send("⚠️ Misslyckades med att spara ändringen.")
+                    await ctx.send("⚠️ Failed to save the change.")
                 return
 
-        await ctx.send(f"❌ Hittade ingen roll med namnet `{role_name}`.")
+        await ctx.send(f"❌ No role found with the name `{role_name}`.")
 
 
 
