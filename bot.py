@@ -1,6 +1,8 @@
 import discord
 import logging
 import json
+import library
+import urllib
 
 from discord.ext import commands
 from db import Database
@@ -24,7 +26,7 @@ class BookCircle(commands.Cog):
             if   command.name == "help":          emoji = "❓"
             elif command.name == "addtext":       emoji = "📝"
             elif command.name == "listtexts":     emoji = "📜"
-            elif command.name in ["book", "bok"]: emoji = "📚"
+            elif command.name in ["book", "bok", "bookinfo"]: emoji = "📚"
             elif command.name == "snack":         emoji = "🍉"
             elif command.name == "source":        emoji = "🔗"
             elif command.name == "rotate":        emoji = "🔄"
@@ -68,6 +70,18 @@ class BookCircle(commands.Cog):
         """Get link to source code of this bot"""
         logging.info(f"{ctx.author} used !source")
         await ctx.send("🔗 Source code: https://github.com/fridokus/bokcirkel 📜")
+
+    @commands.command()
+    async def bookinfo(self, ctx, *, text: str):
+        """Show current book"""
+        logging.info(f"{ctx.author} used !bookinfo")
+        try:
+            book_info = library.fetch_book(text)
+            await ctx.send(f"📚 **Book Information:**\n{book_info}")
+        except Exception as e:
+            logging.error(f"Error retrieving book: {e}")
+            await ctx.send("❌ Failed to retrieve book.")
+
 
     @commands.command()
     async def book(self, ctx):
