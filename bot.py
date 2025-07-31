@@ -2,7 +2,6 @@ import discord
 import logging
 import json
 import library
-import urllib
 
 from discord.ext import commands
 from db import Database
@@ -236,6 +235,34 @@ class BookCircle(commands.Cog):
                 return
 
         await ctx.send(f"❌ No role found with the name `{role_name}`.")
+
+
+    @commands.command()
+    async def setprogress(self, ctx, *, progress=""):
+        """Set your book reading progress"""
+        try:
+            self.db.set_user_progress(ctx.author.id, ctx.author.name, progress)
+            if progress == "":
+                await ctx.send(f"✅ Your progress has been cleared.")
+            else:
+                await ctx.send(f"✅ Your progress has been set to: {progress}")
+        except Exception as e:
+            logging.error(f"Error setting user progress: {e}")
+            await ctx.send("❌ Failed to set your progress. Check logs for details.")
+
+
+    @commands.command()
+    async def progress(self, ctx, *, text: str = None):
+        """Get everyone's reading progress"""
+        try:
+            progresses = self.db.get_user_progress()
+            lines = []
+            for name, progress in progresses:
+                lines.append(f"📖 **{name}**: {progress}")
+            await ctx.send("\n".join(lines) if lines else "📭 No progress set yet.")
+        except Exception as e:
+            logging.error(f"Error retrieving user progress: {e}")
+            await ctx.send("❌ Failed to retrieve user progress. Check logs for details.")
 
 
 
