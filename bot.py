@@ -45,19 +45,24 @@ class BookCircle(commands.Cog):
     @commands.command()
     async def help(self, ctx: commands.Context) -> None:
         """Displays available commands with emojis."""
+        COMMAND_EMOJIS = {
+            "help": "❓",
+            "addtext": "📝",
+            "listtexts": "📜",
+            "book": "📚",
+            "bookinfo": "📚",
+            "snack": "🍉",
+            "source": "🔗",
+            "rotate": "🔄",
+            "roles": "🎭",
+            "initroles": "👶",
+            "switchrole": "🔀",
+            "progress": "📈",
+            "setprogress": "🗂️",
+        }
         embed = discord.Embed(title="📖 Book Circle Commands", color=discord.Color.blue())
         for command in self.bot.commands:
-            if   command.name == "help":          emoji = "❓"
-            elif command.name == "addtext":       emoji = "📝"
-            elif command.name == "listtexts":     emoji = "📜"
-            elif command.name in ["book", "bok", "bookinfo"]: emoji = "📚"
-            elif command.name == "snack":         emoji = "🍉"
-            elif command.name == "source":        emoji = "🔗"
-            elif command.name == "rotate":        emoji = "🔄"
-            elif command.name == "roles":         emoji = "🎭"
-            elif command.name == "initroles":     emoji = "👶"
-            elif command.name == "switchrole":    emoji = "🔀"
-            else:                                 emoji = "⚡"
+            emoji = COMMAND_EMOJIS.get(command.name, "⚡")
             embed.add_field(name=f"{emoji} **!{command.name}**", value=command.help or "No description", inline=False)
         await ctx.send(embed=embed)
 
