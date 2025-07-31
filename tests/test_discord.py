@@ -38,7 +38,7 @@ async def test_help():
 @pytest.mark.asyncio
 async def test_book():
     await dpytest.message("!book")
-    assert dpytest.verify().message().contains().content("Vilhelm")
+    assert dpytest.verify().message().contains().content("Emigrants")
 
 
 
@@ -61,7 +61,7 @@ async def test_setbook_sets():
 @pytest.mark.asyncio
 async def test_snack():
     await dpytest.message("!snack")
-    assert dpytest.verify().message().contains().content("Hela boken")
+    assert dpytest.verify().message().contains().content("The whole book")
 
 
 @pytest.mark.asyncio
@@ -105,13 +105,13 @@ async def test_texts():
 @pytest.mark.asyncio
 async def test_roles():
     await dpytest.message("!roles")
-    assert dpytest.verify().message().contains().content("Roller saknas!")
+    assert dpytest.verify().message().contains().content("Roles are missing!")
 
 @pytest.mark.asyncio
 async def test_roles_work():
     await dpytest.message("!roles")
-    assert dpytest.verify().message().contains().content("Roller saknas!")
+    assert dpytest.verify().message().contains().content("Roles are missing!")
     await dpytest.message("!initroles", member=1)
-    assert dpytest.verify().message().contains().content("initialiserade")
+    assert dpytest.verify().message().contains().content("initialized")
     await dpytest.message("!roles")
-    assert dpytest.verify().message().contains().content("Detaljspanaren")
+    assert dpytest.verify().message().contains().content("Detail Spotter")
