@@ -1,11 +1,31 @@
-
 import discord
-import logging
 import json
-from typing import Optional
 import library
+import logging
+
+from functools import wraps
+from typing import Optional
 from discord.ext import commands
 from db import Database
+
+def command_feedback(success_msg: str = None, failure_msg: str = "An error occurred."):
+    """
+    Decorator for command methods to handle exceptions and send feedback messages.
+    Sends success_msg on success, failure_msg on exception.
+    """
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, ctx, *args, **kwargs):
+            try:
+                result = await func(self, ctx, *args, **kwargs)
+                if success_msg:
+                    await ctx.send(success_msg)
+                return result
+            except Exception as e:
+                logging.error(f"Error in {func.__name__}: {e}")
+                await ctx.send(failure_msg)
+        return wrapper
+    return decorator
 
 class BookCircle(commands.Cog):
     """
@@ -43,14 +63,10 @@ class BookCircle(commands.Cog):
 
 
     @commands.command()
+    @command_feedback(success_msg="✅ Text added!", failure_msg="❌ Failed to add text.")
     async def addtext(self, ctx: commands.Context, *, text: str) -> None:
         """Adds a text string to the database."""
-        try:
-            self.db.add_text(ctx.author.id, ctx.author.name, text)
-            await ctx.send("✅ Text added!")
-        except Exception as e:
-            logging.error(f"Error adding text: {e}")
-            await ctx.send("❌ Failed to add text.")
+        self.db.add_text(ctx.author.id, ctx.author.name, text)
 
     @commands.command()
     async def listtexts(self, ctx: commands.Context) -> None:
@@ -99,17 +115,14 @@ class BookCircle(commands.Cog):
             await ctx.send("❌ Failed to retrieve book text.")
 
     @commands.command()
+    @command_feedback(success_msg=None, failure_msg="❌ **Failed to update book.** Check logs for details.")
     async def setbook(self, ctx: commands.Context, *, text: str) -> None:
         """Set the current book (Admin only)."""
         if not ctx.author.guild_permissions.administrator:
             await ctx.send("❌ You must be an **admin** to set the book!")
             return
-        try:
-            self.db.set_book(text)
-            await ctx.send(f"✅ **Current book updated to:** {text}")
-        except Exception as e:
-            logging.error(f"Error setting book: {e}")
-            await ctx.send("❌ **Failed to update book.** Check logs for details.")
+        self.db.set_book(text)
+        await ctx.send(f"✅ **Current book updated to:** {text}")
 
     @commands.command()
     async def snack(self, ctx: commands.Context) -> None:
@@ -123,33 +136,24 @@ class BookCircle(commands.Cog):
             await ctx.send("❌ Failed to retrieve snack text.")
 
     @commands.command()
+    @command_feedback(success_msg=None, failure_msg="❌ **Failed to update snack text.** Check logs for details.")
     async def setsnack(self, ctx: commands.Context, *, text: str) -> None:
         """Set the next meeting's target chapter (Admin only)."""
         if not ctx.author.guild_permissions.administrator:
             await ctx.send("❌ You must be an **admin** to set the snack text!")
             return
-
-        try:
-            self.db.set_setting("snack", text)
-            await ctx.send(f"✅ **Next meeting's chapter set to:** {text}")
-        except Exception as e:
-            logging.error(f"Error setting snack text: {e}")
-            await ctx.send("❌ **Failed to update snack text.** Check logs for details.")
+        self.db.set_setting("snack", text)
+        await ctx.send(f"✅ **Next meeting's chapter set to:** {text}")
 
     @commands.command()
+    @command_feedback(success_msg="✅ **All text entries have been deleted!**", failure_msg="⚠️ **Failed to clear the database.** Check logs for details.")
     async def cleardb(self, ctx: commands.Context) -> None:
         """Deletes all stored text entries. Only the server owner can run this."""
         if ctx.author.id != ctx.guild.owner_id:
             await ctx.send("❌ You must be the **server owner** to use this command!")
             return
-
-        try:
-            self.db.clear_texts()
-            await ctx.send("✅ **All text entries have been deleted!**")
-            logging.info(f"{ctx.author} cleared the text database.")
-        except Exception as e:
-            logging.error(f"Database clear failed: {e}")
-            await ctx.send("⚠️ **Failed to clear the database.** Check logs for details.")
+        self.db.clear_texts()
+        logging.info(f"{ctx.author} cleared the text database.")
 
     async def load_roles(self, ctx: commands.Context) -> Optional[list]:
         """Helper function to get roles JSON from the database."""
@@ -165,12 +169,12 @@ class BookCircle(commands.Cog):
         return json.loads(json_roles)
 
     @commands.command()
+    @command_feedback(success_msg="✅ Roles initialized! Use `!roles` to see them.", failure_msg="⚠️ Failed to save rotated roles.")
     async def initroles(self, ctx: commands.Context) -> None:
         """Initialize the roles (Admin only)."""
         if not ctx.author.guild_permissions.administrator:
             await ctx.send("❌ Only admin can initialize the roles.")
             return
-
         roles = [
             {"role": "Facilitator", "name": "Oskar", "emoji": "🎤"},
             {"role": "Devil's Advocate", "name": "Jan", "emoji": "😈"},
@@ -180,35 +184,23 @@ class BookCircle(commands.Cog):
             {"role": "Linker", "name": "Armin", "emoji": "🔗"},
             {"role": "Detail Spotter", "name": "Dennis", "emoji": "🕵️"},
         ]
-
-        try:
-            self.db.set_setting("roles", json.dumps(roles))
-            await ctx.send("✅ Roles initialized! Use `!roles` to see them.")
-        except Exception as e:
-            logging.error(f"Error initializing roles: {e}")
-            await ctx.send("⚠️ Failed to save rotated roles.")
+        self.db.set_setting("roles", json.dumps(roles))
 
     @commands.command()
+    @command_feedback(success_msg="✅ Roles rotated! Use `!roles` to see them.", failure_msg="⚠️ Failed to save rotated roles.")
     async def rotate(self, ctx: commands.Context) -> None:
         """Rotate the roles (Admin only)."""
         if not ctx.author.guild_permissions.administrator:
             await ctx.send("❌ Only admin can rotate the roles.")
             return
-
         roles = await self.load_roles(ctx)
         if not roles:
             return
-
         names = [r["name"] for r in roles]
         names = names[1:] + names[:1]
         for i, role in enumerate(roles):
             role["name"] = names[i]
-        try:
-            self.db.set_setting("roles", json.dumps(roles))
-            await ctx.send("✅ Roles rotated! Use `!roles` to see them.")
-        except Exception as e:
-            logging.error(f"Error rotating roles: {e}")
-            await ctx.send("⚠️ Failed to save rotated roles.")
+        self.db.set_setting("roles", json.dumps(roles))
     
     @commands.command()
     async def roles(self, ctx: commands.Context) -> None:
@@ -223,38 +215,31 @@ class BookCircle(commands.Cog):
         await ctx.send("\n".join(lines))
 
     @commands.command()
+    @command_feedback(success_msg=None, failure_msg="⚠️ Failed to save the change.")
     async def switchrole(self, ctx: commands.Context, role_name: str, new_name: str) -> None:
         """Switch the person assigned to a role."""
         if not ctx.author.guild_permissions.administrator:
             await ctx.send("❌ Only admin can change roles.")
             return
-
         roles = await self.load_roles(ctx)
         if not roles:
             return
-
         for role in roles:
             if role["role"].lower() == role_name.lower():
                 role["name"] = new_name
-                if self.db.set_setting("roles", json.dumps(roles)):
-                    await ctx.send(f"✅ Changed `{role_name}` to `{new_name}`.")
-                else:
-                    await ctx.send("⚠️ Failed to save the change.")
+                self.db.set_setting("roles", json.dumps(roles))
+                await ctx.send(f"✅ Changed `{role_name}` to `{new_name}`.")
                 return
-
         await ctx.send(f"❌ No role found with the name `{role_name}`.")
 
 
     @commands.command()
+    @command_feedback(failure_msg="❌ Failed to set your progress. Check logs for details.")
     async def setprogress(self, ctx, *, progress: str = "") -> None:
         """Set or clear your book reading progress."""
-        try:
-            self.db.set_user_progress(ctx.author.id, ctx.author.name, progress)
-            msg = "✅ Your progress has been cleared." if not progress else f"✅ Your progress has been set to: {progress}"
-            await ctx.send(msg)
-        except Exception as e:
-            logging.error(f"Error setting user progress: {e}")
-            await ctx.send("❌ Failed to set your progress. Check logs for details.")
+        self.db.set_user_progress(ctx.author.id, ctx.author.name, progress)
+        msg = "✅ Your progress has been cleared." if not progress else f"✅ Your progress has been set to: {progress}"
+        await ctx.send(msg)
 
 
     @commands.command()
