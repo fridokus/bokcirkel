@@ -6,9 +6,9 @@ import logging
 from functools import wraps
 from typing import Optional
 from discord.ext import commands
-from db import Database
+from db.db import Database
 
-def command_feedback(success_msg: str = None, failure_msg: str = "An error occurred."):
+def command_feedback(success_msg: Optional[str] = None, failure_msg: str = "An error occurred."):
     """
     Decorator for command methods to handle exceptions and send feedback messages.
     Sends success_msg on success, failure_msg on exception.

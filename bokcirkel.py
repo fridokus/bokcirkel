@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 
 import logging
-import db
+from db import db,updatedb
 import discord
-import library
 
 from bot import Bot
 
@@ -17,14 +16,16 @@ logging.basicConfig(
 
 def main():
     try:
+        database = db.Database()
+        updatedb.execute_sql_from_file(database.conn)
         with open('.token', 'r') as f:
             token = f.read().strip()
         logging.info("Starting bot...")
-
+        
         intents = discord.Intents.default()
         intents.message_content = True
         intents.messages = True
-        bot = Bot(db=db.Database(), intents=intents)
+        bot = Bot(db=database, intents=intents)
         bot.run(token)
 
     except Exception as e:
