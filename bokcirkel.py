@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
 import logging
-from db import db,updatedb
 import discord
+import sys
 
-from bot import Bot
+from src.bot import Bot
 
 LOG_FILE = "/var/log/bokcirkel.log"
 logging.basicConfig(
@@ -13,23 +13,26 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
+# Nice for local debugging
+# logging.basicConfig(
+#     stream=sys.stdout,
+#     level=logging.INFO,
+#     format='%(asctime)s [%(levelname)s] %(message)s',
+#     datefmt='%Y-%m-%d %H:%M:%S'
+# )
 
 def main():
     try:
-        database = db.Database()
-        updatedb.execute_sql_from_file(database.conn)
         with open('.token', 'r') as f:
             token = f.read().strip()
         logging.info("Starting bot...")
-        
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.messages = True
-        bot = Bot(db=database, intents=intents)
+
+        intents = discord.Intents.all()
+        bot = Bot(intents=intents)
         bot.run(token)
 
     except Exception as e:
-        logging.error(f"Error bot: {e}")
+        logging.exception("Bot error")
 
 if __name__ == "__main__":
     main()
