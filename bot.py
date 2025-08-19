@@ -21,9 +21,13 @@ def command_feedback(success_msg: Optional[str] = None, failure_msg: str = "An e
                 if success_msg:
                     await ctx.send(success_msg)
                 return result
-            except Exception as e:
-                logging.error(f"Error in {func.__name__}: {e}")
-                await ctx.send(failure_msg)
+            except Exception:
+                logging.exception("Error in {func.__name__}")
+                await ctx.send(embed=discord.Embed(
+                    title="Error",
+                    description=f"{failure_msg}",
+                    color=discord.Color.red()
+                ))
         return wrapper
     return decorator
 
@@ -39,7 +43,7 @@ class BookCircle(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         """Event handler for when the bot is ready."""
-        logging.info(f"Logged in as {self.bot.user}")
+        logging.info("Logged in as {self.bot.user}")
         print(f"Logged in as {self.bot.user}")
 
     @commands.command()
@@ -85,8 +89,8 @@ class BookCircle(commands.Cog):
                     [f"📌 {r[0]}: {r[1]} (*{r[2].strftime('%Y-%m-%d %H:%M:%S')}*)" for r in texts[::-1]]
                 )
                 await ctx.send(response)
-        except Exception as e:
-            logging.error(f"Error listing texts: {e}")
+        except Exception:
+            logging.exception("Error listing texts")
             await ctx.send("❌ Failed to retrieve texts.")
 
 
@@ -103,8 +107,8 @@ class BookCircle(commands.Cog):
         try:
             book_info = library.fetch_book(text)
             await ctx.send(f"📚 **Book Information:**\n{book_info}")
-        except Exception as e:
-            logging.error(f"Error retrieving book: {e}")
+        except Exception:
+            logging.exception("Error retrieving book")
             await ctx.send("❌ Failed to retrieve book.")
 
 
@@ -115,8 +119,8 @@ class BookCircle(commands.Cog):
         try:
             book_text = self.db.get_book()
             await ctx.send(book_text)
-        except Exception as e:
-            logging.error(f"Error retrieving book text: {e}")
+        except Exception:
+            logging.exception("Error retrieving book text")
             await ctx.send("❌ Failed to retrieve book text.")
 
     @commands.command()
@@ -136,8 +140,8 @@ class BookCircle(commands.Cog):
         try:
             snack_text = self.db.get_setting("snack") or "📖 The whole book 🍉"
             await ctx.send(snack_text)
-        except Exception as e:
-            logging.error(f"Error retrieving snack text: {e}")
+        except Exception:
+            logging.exception("Error retrieving snack text")
             await ctx.send("❌ Failed to retrieve snack text.")
 
     @commands.command()
@@ -164,8 +168,8 @@ class BookCircle(commands.Cog):
         """Helper function to get roles JSON from the database."""
         try:
             json_roles = self.db.get_setting("roles")
-        except Exception as e:
-            logging.error(f"Error fetching roles: {e}")
+        except Exception:
+            logging.exception("Error fetching roles")
             await ctx.send("❌ Failed to fetch roles. Check logs.")
             return None
         if not json_roles:
@@ -192,7 +196,7 @@ class BookCircle(commands.Cog):
         self.db.set_setting("roles", json.dumps(roles))
 
     @commands.command()
-    @command_feedback(success_msg="✅ Roles rotated! Use `!roles` to see them.", failure_msg="⚠️ Failed to save rotated roles.")
+    @command_feedback(success_msg=None, failure_msg="⚠️ Failed to save rotated roles.")
     async def rotate(self, ctx: commands.Context) -> None:
         """Rotate the roles (Admin only)."""
         if not ctx.author.guild_permissions.administrator:
@@ -206,6 +210,7 @@ class BookCircle(commands.Cog):
         for i, role in enumerate(roles):
             role["name"] = names[i]
         self.db.set_setting("roles", json.dumps(roles))
+        await ctx.send("✅ Roles rotated! Use `!roles` to see them.")
     
     @commands.command()
     async def roles(self, ctx: commands.Context) -> None:
@@ -257,10 +262,9 @@ class BookCircle(commands.Cog):
                 return
             lines = [f"📖 **{name}**: {progress if progress else 'No progress set.'}" for name, progress in progresses]
             await ctx.send("\n".join(lines))
-        except Exception as e:
-            logging.error(f"Error retrieving user progress: {e}")
+        except Exception:
+            logging.exception("Error retrieving user progress")
             await ctx.send("❌ Failed to retrieve user progress. Check logs for details.")
-
 
 
 class Bot(commands.Bot):
@@ -271,6 +275,14 @@ class Bot(commands.Bot):
         self.db = db
         super().__init__(command_prefix="!", intents=intents)
         self.remove_command("help")
+
+    async def on_command_error(self, ctx: commands.Context, error: Exception) -> None:
+        if isinstance(error, commands.CommandNotFound):
+            await ctx.send(embed=discord.Embed(
+                title="Command not found",
+                description=f"{error}. Type !help for a list of commands",
+                color=discord.Color.red()
+            ))
 
     async def setup_hook(self) -> None:
         await self.add_cog(BookCircle(self, self.db))
