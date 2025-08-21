@@ -44,6 +44,44 @@ class ServiceBook:
 
 
 class BookCircleService:
+
+    @try_except_result
+    def set_progress(self, book_club_id: int, user_id: int, progress: str) -> Result[discord.Embed]:
+        with Session(self.engine) as session:
+            bcr = session.execute(
+                select(BookClubReader).where(
+                    BookClubReader.book_club_id == book_club_id,
+                    BookClubReader.user_id == user_id,
+                )
+            ).scalar_one_or_none()
+            if not bcr:
+                return Err("You are not a member of this book club.")
+            bcr_progress = getattr(bcr, "progress", None)
+            bcr.progress = progress
+            session.commit()
+            embed = discord.Embed(
+                title="📈 Progress Updated",
+                description=f"Your progress is now set to: {progress}",
+                color=discord.Color.blue(),
+            )
+            return Ok(embed)
+
+    @try_except_result
+    def get_progress(self, book_club_id: int) -> Result[discord.Embed]:
+        with Session(self.engine) as session:
+            club = session.get(BookClub, book_club_id)
+            if not club:
+                return Err("Book club not found.")
+            embed = discord.Embed(title="📊 Reading Progress", color=discord.Color.green())
+            for reader in club.readers:
+                user = reader.user
+                progress = getattr(reader, "progress", None)
+                embed.add_field(
+                    name=user.name,
+                    value=progress or "No progress set",
+                    inline=False,
+                )
+            return Ok(embed)
     def __init__(self, engine):
         self.engine = engine
 
@@ -515,6 +553,7 @@ class BookCircleService:
             if not bcr:
                 return Err("User is not a member of this book club.")
             bcr.state = state
+            bcr.progress = club.target
             session.commit()
             embed = discord.Embed(
                 title="🔄 Reader State Updated",
@@ -573,4 +612,11 @@ class BookCircleService:
             embed.add_field(name="Reviews", value=f"⭐ {total_reviews}", inline=True)
             embed.add_field(name="Quotes", value=f"💬 {total_quotes}", inline=True)
             embed.add_field(name="Notes", value=f"🗒️ {total_notes}", inline=True)
+            # Add per-user progress
+            progress_lines = []
+            for reader in club.readers:
+                progress = getattr(reader, "progress", None)
+                progress_lines.append(f"{reader.user.name}: {progress or 'No progress set'}")
+            if progress_lines:
+                embed.add_field(name="Progress", value="\n".join(progress_lines), inline=False)
             return Ok(embed)

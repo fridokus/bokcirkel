@@ -39,6 +39,13 @@ class BookCircle(commands.Cog):
         }
         super().__init__()
 
+    @commands.command()
+    @send_embed
+    async def progress(self, ctx: commands.Context, *, progress: str):
+        """Set your reading progress (e.g., page, chapter, percent)."""
+        return self.service.set_progress(ctx.channel.id, ctx.author.id, progress)
+
+
     async def background_shame_task(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():

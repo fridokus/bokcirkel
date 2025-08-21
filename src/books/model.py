@@ -39,6 +39,7 @@ class BookClubReader(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
     state: Mapped["BookClubReaderState"] = mapped_column(Enum(BookClubReaderState), nullable=False, default=BookClubReaderState.READING)
     role: Mapped["BookClubReaderRole"] = mapped_column(Enum(BookClubReaderRole), nullable=False, default=BookClubReaderRole.NONE)
+    progress: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # Add more fields as needed (e.g., join_date)
     book_club: Mapped["BookClub"] = relationship("BookClub", back_populates="readers")
     user: Mapped["User"] = relationship("User", back_populates="book_club_readerships")
