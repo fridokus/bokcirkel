@@ -1,9 +1,9 @@
-import discord
 import asyncio
 import logging
-
 from functools import wraps
 from typing import Optional
+
+import discord
 from discord.ext import commands
 from sqlalchemy.orm import Session
 
@@ -29,11 +29,20 @@ def send_embed(func):
     return wrapper
 
 
-
 class BookCircle(commands.Cog):
+    def __init__(self, bot: commands.Bot, engine):
+        self.bot = bot
+        self.engine = engine
+        self.service = BookCircleService(engine)
+        self.roles = {
+            r.name for r in BookClubReaderRole if r != BookClubReaderRole.NONE
+        }
+        super().__init__()
+
     async def background_shame_task(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
+            await asyncio.sleep(12 * 60 * 60)  # 12 hours
             for guild in self.bot.guilds:
                 for channel in guild.text_channels:
                     try:
@@ -45,6 +54,7 @@ class BookCircle(commands.Cog):
                                 r
                                 for r in club.readers
                                 if r.state != BookClubReaderState.CAUGHT_UP
+                                and r.state != BookClubReaderState.COMPLETED
                             ]
                             if not not_caught_up:
                                 continue
@@ -60,7 +70,6 @@ class BookCircle(commands.Cog):
                         logging.exception(
                             f"Error in shame background task for channel {channel.id}"
                         )
-            await asyncio.sleep(12 * 60 * 60)  # 12 hours
 
     @commands.command()
     async def shame(self, ctx: commands.Context):
@@ -77,7 +86,8 @@ class BookCircle(commands.Cog):
                 )
                 return
             not_caught_up = [
-                r for r in club.readers if r.state != BookClubReaderState.CAUGHT_UP
+                r for r in club.readers if r.state != BookClubReaderState.CAUGHT_UP and 
+                r.state != BookClubReaderState.COMPLETED
             ]
             if not not_caught_up:
                 await ctx.send(
@@ -99,15 +109,6 @@ class BookCircle(commands.Cog):
                     color=discord.Color.red(),
                 )
             )
-
-    def __init__(self, bot: commands.Bot, engine):
-        self.bot = bot
-        self.engine = engine
-        self.service = BookCircleService(engine)
-        self.roles = {
-            r.name for r in BookClubReaderRole if r != BookClubReaderRole.NONE
-        }
-        super().__init__()
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
@@ -198,6 +199,13 @@ class BookCircle(commands.Cog):
     @commands.command()
     @send_embed
     @commands.has_permissions(administrator=True)
+    async def syncroles(self, ctx: commands.Context):
+        """Synchronize the roles based on this book club (admin only)."""
+        await self.__synchronize_roles(ctx)
+
+    @commands.command()
+    @send_embed
+    @commands.has_permissions(administrator=True)
     async def shuffleroles(self, ctx: commands.Context):
         """Randomly assign roles to all readers in this book club (admin only)."""
         match r := self.service.shuffle_roles(ctx.channel.id):
@@ -262,7 +270,7 @@ class BookCircle(commands.Cog):
 
     _book_club_message_embed = discord.Embed(
         title="🎉 Book Club Created",
-        description="A new book club has been created. Update the book with `!book <title> <author>`. Join the club with `!join`.",
+        description="A new book club has been created. Update the book with `!book <title> <author>`. Join the club with `!join`. You can also start a poll of suggested books with !poll <seconds>",
         color=discord.Color.green(),
     )
 
@@ -292,7 +300,7 @@ class BookCircle(commands.Cog):
         match r := self.service.create_or_update_book(ctx.channel.id, title, author):
             case Ok():
                 if isinstance(ctx.channel, discord.TextChannel):
-                    await ctx.channel.edit(name=title or "bokcirkel")
+                    await ctx.channel.edit(name=f"📚 {title or 'bokcirkel'}")
                 return r
             case Err():
                 return r
@@ -357,7 +365,7 @@ class BookCircle(commands.Cog):
 
     @commands.command()
     @send_embed
-    async def setrole(self, ctx: commands.Context, role: str):
+    async def role(self, ctx: commands.Context, role: str):
         """Manually set your reader role."""
 
         try:
@@ -378,3 +386,85 @@ class BookCircle(commands.Cog):
                     + [guild_roles[role_enum.name]]
                 )
         return r
+
+    @commands.command()
+    @send_embed
+    async def suggest(
+        self, ctx: commands.Context, title: str, *, author: Optional[str] = None
+    ):
+        """Suggest a book for the club."""
+        return self.service.suggest_book(ctx.author.id, title, author)
+
+    @commands.command()
+    @send_embed
+    async def suggested(self, ctx: commands.Context) -> Result[discord.Embed]:
+        """Show all suggested books."""
+        match r := self.service.get_suggested_books():
+            case Ok(suggestions):
+                embed = discord.Embed(title="📚 Suggested Books")
+                for suggestion in suggestions:
+                    embed.add_field(
+                        name=suggestion.title,
+                        value=f"by {suggestion.author or 'Unknown'}",
+                        inline=False,
+                    )
+                return Ok(embed)
+        return r
+
+    @commands.command()
+    async def poll(self, ctx: commands.Context, seconds: int = 30):
+        """Start a poll of all suggested books. Winner is removed from suggestions. !poll <seconds>"""
+        ## Limit is 10 by default. Which matches the number of emojis
+        if seconds > 3600 * 24:
+            # Limit it to 1 day.
+            seconds = 3600 * 24
+        result = self.service.get_suggested_books()
+        logging.info(f"Poll books result: {result}")
+        match result:
+            case Ok(suggestions):
+                if not suggestions:
+                    await ctx.send("No books have been suggested.")
+                    return
+                embed = discord.Embed(
+                    title="📊 Book Poll",
+                    description="Vote for the next book! React below.",
+                )
+                emoji_list = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+                book_map = {}
+                for i, suggestion in enumerate(suggestions):
+                    emoji = emoji_list[i % len(emoji_list)]
+                    embed.add_field(
+                        name=f"{emoji} {suggestion.title}",
+                        value=f"by {suggestion.author or 'Unknown'} (suggested by <@{suggestion.suggester_id}>)",
+                        inline=False,
+                    )
+                    book_map[emoji] = suggestion.id
+                poll_message = await ctx.send(embed=embed)
+                for emoji in book_map:
+                    await poll_message.add_reaction(emoji)
+                await ctx.send(
+                    f"Poll started! React with your vote. It will end in {seconds} seconds."
+                )
+                await asyncio.sleep(seconds)  # Poll duration (seconds)
+                poll_message = await ctx.channel.fetch_message(poll_message.id)
+                counts = {emoji: 0 for emoji in book_map}
+                for reaction in poll_message.reactions:
+                    if reaction.emoji in book_map:
+                        users = [u async for u in reaction.users()]
+                        counts[reaction.emoji] = len([u for u in users if not u.bot])
+                winner_emoji = max(counts, key=counts.get)
+                winner_id = book_map[winner_emoji]
+                winner = next((s for s in suggestions if s.id == winner_id), None)
+                if winner:
+                    match self.service.pop_suggested_book(ctx.channel.id, winner.id):
+                        case Ok(BookCircleService.BookAppliedToClub()):
+                            await ctx.send(
+                                f"🏆 The winner is '{winner.title}' by {winner.author or 'Unknown'}!"
+                            )
+                            # update channel name
+                            if isinstance(ctx.channel, discord.TextChannel):
+                                await ctx.channel.edit(name=f"📚 {winner.title}")
+                else:
+                    await ctx.send("No winner could be determined.")
+            case Err(msg):
+                await ctx.send(f"Error: {msg}")
