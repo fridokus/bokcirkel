@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from functools import wraps
 from typing import Optional
 
@@ -7,8 +8,19 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..result_types import Err, Ok, Result
-from .model import (Book, BookClub, BookClubReader, BookClubReaderRole,
-                    BookClubReaderState, BookState, Note, Quote, Review, User)
+from .model import (
+    Book,
+    BookClub,
+    BookClubReader,
+    BookClubReaderRole,
+    BookClubReaderState,
+    BookState,
+    Note,
+    Quote,
+    Review,
+    SuggestedBook,
+    User,
+)
 
 
 def try_except_result(func):
@@ -23,7 +35,84 @@ def try_except_result(func):
     return wrapper
 
 
+@dataclass
+class ServiceBook:
+    id: int
+    title: str
+    suggester_id: int
+    author: Optional[str] = None
+
+
 class BookCircleService:
+    def __init__(self, engine):
+        self.engine = engine
+
+    @try_except_result
+    def suggest_book(
+        self, suggester_id: int, title: str, author: Optional[str] = None
+    ) -> Result[discord.Embed]:
+        with Session(self.engine) as session:
+            user = session.get(User, suggester_id)
+            if not user:
+                return Err("User not found.")
+            suggestion = SuggestedBook(
+                title=title, author=author, suggester_id=suggester_id
+            )
+            session.add(suggestion)
+            session.commit()
+            embed = discord.Embed(
+                title="📚 Book Suggested",
+                description=f"'{title}' by {author or 'Unknown'} has been suggested by {user.name}.",
+                color=discord.Color.blue(),
+            )
+            return Ok(embed)
+
+    @try_except_result
+    def get_suggested_books(self, limit=10) -> Result[list]:
+        with Session(self.engine) as session:
+            suggestions = session.execute(select(SuggestedBook).limit(limit)).scalars().all()
+            return Ok(
+                [
+                    ServiceBook(
+                        id=s.id,
+                        title=s.title,
+                        author=s.author,
+                        suggester_id=s.suggester_id,
+                    )
+                    for s in suggestions
+                ]
+            )
+
+    @try_except_result
+    def remove_suggested_book(self, suggestion_id: int) -> Result[None]:
+        with Session(self.engine) as session:
+            suggestion = session.get(SuggestedBook, suggestion_id)
+            if not suggestion:
+                return Err("Suggestion not found.")
+            session.delete(suggestion)
+            session.commit()
+            return Ok(None)
+
+    class BookAppliedToClub:
+        pass
+    class BookClubNotFound:
+        pass
+    @try_except_result
+    def pop_suggested_book(self, book_club_id: int, suggestion_id: int) -> Result[BookAppliedToClub|BookClubNotFound]:
+        with Session(self.engine) as session:
+            club = session.get(BookClub, book_club_id)
+            suggestion = session.get(SuggestedBook, suggestion_id)
+            if not suggestion:
+                return Err("Suggestion not found.")
+            if club:
+                club.book.title = suggestion.title
+                club.book.author = suggestion.author
+            session.delete(suggestion)
+            session.commit()
+            if club:
+                return Ok(BookCircleService.BookAppliedToClub())
+            return Ok(BookCircleService.BookClubNotFound())
+
 
     @try_except_result
     def shuffle_roles(self, book_club_id: int) -> Result[discord.Embed]:
@@ -56,7 +145,9 @@ class BookCircleService:
             for reader in readers:
                 emoji = "🎭"
                 embed.add_field(
-                    name=reader.user.name, value=f"{emoji} {reader.role.value}", inline=True
+                    name=reader.user.name,
+                    value=f"{emoji} {reader.role.value}",
+                    inline=True,
                 )
             return Ok(embed)
 
@@ -171,13 +262,13 @@ class BookCircleService:
             bcr = BookClubReader(book_club_id=club.id, user_id=db_user.id)
             session.add(bcr)
             session.commit()
-        return Ok(
-            discord.Embed(
-                title="🙋 Joined Book Club",
-                description=f"{user.name} joined the book club!",
-                color=discord.Color.green(),
+            return Ok(
+                discord.Embed(
+                    title="🙋 Joined Book Club",
+                    description=f"{user.name} joined the book club!",
+                    color=discord.Color.green(),
+                )
             )
-        )
 
     @try_except_result
     def leave_club(
@@ -197,13 +288,13 @@ class BookCircleService:
                 return Err("You are not a member of this book club.")
             session.delete(bcr)
             session.commit()
-        return Ok(
-            discord.Embed(
-                title="👋 Left Book Club",
-                description=f"{user.name} left the book club.",
-                color=discord.Color.orange(),
+            return Ok(
+                discord.Embed(
+                    title="👋 Left Book Club",
+                    description=f"{user.name} left the book club.",
+                    color=discord.Color.orange(),
+                )
             )
-        )
 
     @try_except_result
     def kick_member(
@@ -223,16 +314,13 @@ class BookCircleService:
                 return Err("User is not a member of this book club.")
             session.delete(bcr)
             session.commit()
-        return Ok(
-            discord.Embed(
-                title="🚫 Kicked from Book Club",
-                description=f"User {user.name} was kicked from the book club.",
-                color=discord.Color.red(),
+            return Ok(
+                discord.Embed(
+                    title="🚫 Kicked from Book Club",
+                    description=f"User {user.name} was kicked from the book club.",
+                    color=discord.Color.red(),
+                )
             )
-        )
-
-    def __init__(self, engine):
-        self.engine = engine
 
     @try_except_result
     def create_club(self, book_club_id: int) -> Result[discord.Embed]:
@@ -297,16 +385,21 @@ class BookCircleService:
             club.state = state
             if target is None:
                 return Err("Target chapter must be specified.")
-            club.target = target
-            # Set all readers to READING when a new target is set
-            for reader in club.readers:
-                reader.state = BookClubReaderState.READING
+            if club.target != target:
+                club.target = target
+                # Set all readers to READING when a new target is set
+                for reader in club.readers:
+                    reader.state = BookClubReaderState.READING
+            if state == BookState.COMPLETED:
+                for reader in club.readers:
+                    reader.state = BookClubReaderState.COMPLETED
+
             session.commit()
             embed = discord.Embed(
                 title="book_club Updated",
                 description=f"Book club status set to {state.value}. New target is {target or club.target}",
             )
-        return Ok(embed)
+            return Ok(embed)
 
     @try_except_result
     def add_review(
@@ -347,7 +440,7 @@ class BookCircleService:
                 title="⭐ Review Added",
                 description=f"{member.name} reviewed '{club.book.title}': {text}\nRating: {rating if rating is not None else 'N/A'}",
             )
-        return Ok(embed)
+            return Ok(embed)
 
     @try_except_result
     def add_quote(
@@ -372,7 +465,7 @@ class BookCircleService:
                 title="💬 Quote Added",
                 description=f"{bcr.user.name} added a quote for '{club.book.title}': {text}",
             )
-        return Ok(embed)
+            return Ok(embed)
 
     @try_except_result
     def add_note(
@@ -402,7 +495,7 @@ class BookCircleService:
                 title="🗒️ Note Added",
                 description=f"{user.name} added a note for '{club.book.title}': {text}",
             )
-        return Ok(embed)
+            return Ok(embed)
 
     @try_except_result
     def set_reader_state(
@@ -427,7 +520,7 @@ class BookCircleService:
                 title="🔄 Reader State Updated",
                 description=f"Reader state set to {state.value}.",
             )
-        return Ok(embed)
+            return Ok(embed)
 
     @try_except_result
     def set_reader_role(
@@ -454,7 +547,7 @@ class BookCircleService:
                 title="🎭 Reader Role Updated",
                 description=f"Reader role set to {role.value} for user {user.name} in book club {book_club.book.title}.",
             )
-        return Ok(embed)
+            return Ok(embed)
 
     @try_except_result
     def get_status(self, book_club_id: int) -> Result[discord.Embed]:
@@ -473,7 +566,9 @@ class BookCircleService:
             )
             embed = discord.Embed(title=f"📊 Book Club Status: {club.book.title}")
             embed.add_field(name="State", value=f"📖 {club.state.value}", inline=False)
-            embed.add_field(name="Target", value=f"🎯 {club.target or 'N/A'}", inline=False)
+            embed.add_field(
+                name="Target", value=f"🎯 {club.target or 'N/A'}", inline=False
+            )
             embed.add_field(name="Readers", value=f"🙋 {readers_list}", inline=False)
             embed.add_field(name="Reviews", value=f"⭐ {total_reviews}", inline=True)
             embed.add_field(name="Quotes", value=f"💬 {total_quotes}", inline=True)

@@ -92,3 +92,11 @@ class Review(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
     rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     book_club_reader: Mapped["BookClubReader"] = relationship("BookClubReader", back_populates="reviews")
+
+class SuggestedBook(Base):
+    __tablename__ = "suggested_book"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    author: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    suggester_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
+    # Optionally add a timestamp or other metadata
