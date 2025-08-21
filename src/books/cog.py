@@ -277,7 +277,7 @@ class BookCircle(commands.Cog):
 
     _book_club_message_embed = discord.Embed(
         title="🎉 Book Club Created",
-        description="A new book club has been created. Update the book with `!book <title> <author>`. Join the club with `!join`. You can also start a poll of suggested books with `!poll <seconds>`.\n\n- Use `!note <text>` to share notes and `!quote <text>` to share quotes.",
+        description="A new book club has been created. Update the book with `!book <title> <author>`. Join the club with `!join`. You can also start a poll of suggested books with `!poll <seconds>`.\n\n-# Use `!note <text>` to share notes and `!quote <text>` to share quotes.",
         color=discord.Color.green(),
     )
 
