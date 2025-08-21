@@ -277,7 +277,7 @@ class BookCircle(commands.Cog):
 
     _book_club_message_embed = discord.Embed(
         title="🎉 Book Club Created",
-        description="A new book club has been created. Update the book with `!book <title> <author>`. Join the club with `!join`. You can also start a poll of suggested books with !poll <seconds>",
+        description="A new book club has been created. Update the book with `!book <title> <author>`. Join the club with `!join`. You can also start a poll of suggested books with !poll <seconds>.\n\n-# Use !note to share notes and !quote to share quotes.",
         color=discord.Color.green(),
     )
 
@@ -323,7 +323,12 @@ class BookCircle(commands.Cog):
     @send_embed
     async def target(self, ctx: commands.Context, *, target: Optional[str]):
         """Set the target for the current book club."""
-        return self.service.set_target(ctx.channel.id, BookState.READING, target)
+        match self.service.set_target(ctx.channel.id, BookState.READING, target):
+            case Ok():
+                embed = discord.Embed(title="🎯 Target Set", description=f"New target set to: {target}. Type !caughtup when you have reached the target.", color=discord.Color.green())
+                await ctx.send(embed=embed)
+            case Err():
+                return Err("Failed to set target.")
 
     @commands.command()
     @send_embed
@@ -366,8 +371,8 @@ class BookCircle(commands.Cog):
     @send_embed
     async def caughtup(self, ctx: commands.Context):
         """You have caught up to the current target."""
-        return self.service.set_reader_state(
-            ctx.channel.id, ctx.author.id, BookClubReaderState.CAUGHT_UP
+        return self.service.caught_up(
+            ctx.channel.id, ctx.author.id
         )
 
     @commands.command()
@@ -420,7 +425,7 @@ class BookCircle(commands.Cog):
 
     @commands.command()
     async def poll(self, ctx: commands.Context, seconds: int = 30):
-        """Start a poll of all suggested books. Winner is removed from suggestions. !poll <seconds>"""
+        """Start a poll of all suggested books. Winner is removed from suggestions. `!poll <seconds>`"""
         ## Limit is 10 by default. Which matches the number of emojis
         if seconds > 3600 * 24:
             # Limit it to 1 day.

@@ -44,6 +44,35 @@ class ServiceBook:
 
 
 class BookCircleService:
+    def __init__(self, engine):
+        self.engine = engine
+
+    @try_except_result
+    def caught_up(self, book_club_id: int, user_id: int) -> Result[discord.Embed]:
+        with Session(self.engine) as session:
+            club = session.get(BookClub, book_club_id)
+            if not club:
+                return Err("Book club not found.")
+            bcr = session.execute(
+                select(BookClubReader).where(
+                    BookClubReader.book_club_id == book_club_id,
+                    BookClubReader.user_id == user_id,
+                )
+            ).scalar_one_or_none()
+            if not bcr:
+                return Err("You are not a member of this book club.")
+            bcr.state = BookClubReaderState.CAUGHT_UP
+            session.commit()
+            user = session.get(User, user_id)
+            if user is None:
+                return Err("User not found.")
+            embed = discord.Embed(
+                title="🎉 You Caught Up!",
+                description=f"{user.name} has caught up to the current target! Give them a round of applause! 👏",
+                color=discord.Color.gold(),
+            )
+            embed.set_thumbnail(url="https://media.giphy.com/media/111ebonMs90YLu/giphy.gif")
+            return Ok(embed)
 
     @try_except_result
     def set_progress(self, book_club_id: int, user_id: int, progress: str) -> Result[discord.Embed]:
@@ -65,25 +94,6 @@ class BookCircleService:
                 color=discord.Color.blue(),
             )
             return Ok(embed)
-
-    @try_except_result
-    def get_progress(self, book_club_id: int) -> Result[discord.Embed]:
-        with Session(self.engine) as session:
-            club = session.get(BookClub, book_club_id)
-            if not club:
-                return Err("Book club not found.")
-            embed = discord.Embed(title="📊 Reading Progress", color=discord.Color.green())
-            for reader in club.readers:
-                user = reader.user
-                progress = getattr(reader, "progress", None)
-                embed.add_field(
-                    name=user.name,
-                    value=progress or "No progress set",
-                    inline=False,
-                )
-            return Ok(embed)
-    def __init__(self, engine):
-        self.engine = engine
 
     @try_except_result
     def suggest_book(
@@ -368,12 +378,11 @@ class BookCircleService:
             club.book = Book(title="Update me", author="Unknown")
             session.merge(club)
             session.commit()
-        return Ok(
-            discord.Embed(
-                title="🎉 Book Club Created",
-                description=f"Book club created successfully.",
-            )
+        embed = discord.Embed(
+            title="🎉 Book Club Created",
+            description=f"Book club created successfully.",
         )
+        return Ok(embed)
 
     @try_except_result
     def create_or_update_book(
@@ -415,7 +424,7 @@ class BookCircleService:
     @try_except_result
     def set_target(
         self, book_club_id: int, state: BookState, target: Optional[str] = None
-    ) -> Result[discord.Embed]:
+    ) -> Result[str]:
         with Session(self.engine) as session:
             club = session.get(BookClub, book_club_id)
             if not club:
@@ -433,11 +442,7 @@ class BookCircleService:
                     reader.state = BookClubReaderState.COMPLETED
 
             session.commit()
-            embed = discord.Embed(
-                title="book_club Updated",
-                description=f"Book club status set to {state.value}. New target is {target or club.target}",
-            )
-            return Ok(embed)
+            return Ok(f"Book club status set to {state.value}. New target is {target or club.target}")
 
     @try_except_result
     def add_review(
