@@ -26,5 +26,8 @@ def rotate_roles(engine, book_club_id: int) -> Result[discord.Embed]:
             description="Each reader has received the next reader's role.",
         )
         for reader in readers:
-            embed.add_field(name=reader.user.name, value=reader.role.value, inline=True)
+            role = reader.role
+            embed.add_field(
+                name=reader.user.name,                                                                                                               value=f"{role.emoji} {role.value}",
+                inline=True,                                                                                                                     )
         return Ok(embed)
