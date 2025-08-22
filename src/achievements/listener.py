@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta, UTC
 from typing import List
 
 import discord
@@ -13,27 +14,38 @@ from .model import Achievement, Counter, UserAchievement
 class Listener:
     signal_name: str
 
-    def __init__(self, engine):
+    def __init__(self, engine, signal_name=None):
+        if signal_name:
+            self.signal_name = signal_name
         logging.info(f"Initializing listener for signal: {self.signal_name}")
         self.engine = engine
         self.signal = signal(self.signal_name)
         self.signal.connect(self.action)
 
-    def __increment_counter(self, session, user_id: int, name: str, amount: int = 1):
-        counter = session.query(Counter).filter_by(user_id=user_id, name=name).one_or_none()
+    def increment(self, session, user_id: int, amount: int):
+        counter = session.query(Counter).filter_by(user_id=user_id, name=self.signal_name).one_or_none()
         if counter is None:
-            counter = Counter(user_id=user_id, name=name, value=amount)
+            counter = Counter(user_id=user_id, name=self.signal_name, value=amount)
             session.add(counter)
         else:
             counter.value += amount
 
-
-    def increment(self, session, user_id: int, amount: int):
-        self.__increment_counter(session, user_id, self.signal_name, amount)
-
     async def action(self, sender, **kwargs):
-        logging.warning("Listener action not implemented")
-        pass
+        try:
+            user_id = kwargs.get("user_id")
+            ctx = kwargs.get("ctx")
+            if ctx is None or user_id is None:
+                return
+            embeds = []
+            with Session(self.engine) as session:
+                self.increment(session, user_id, 1)
+                session.flush()
+                embeds.extend(self.check_achievements(session, user_id))
+                session.commit()
+            for embed in embeds:
+                await ctx.send(embed=embed)
+        except Exception:
+            logging.exception(f"Error in {self.signal_name} listener action")
 
     def check_achievements(self, session: Session, user_id: int) -> List[discord.Embed]:
         # Fetch all counters for the user
@@ -57,12 +69,51 @@ class Listener:
             if counters.get(counter_name, 0) >= required_value and ach.id not in granted_ids:
                 session.merge(UserAchievement(user_id=user_id, achievement_id=ach.id))
                 embed = discord.Embed(
-                    title=f"{user.name or 'Unknown'} unlocks achievement: {ach.name} {ach.icon or ''}",
+                    title=f"{user.name if user else 'Unknown'} unlocks achievement: {ach.name} {ach.icon or ''}",
                     description=ach.description,
                     color=discord.Color.gold()
                 )
                 granted_embeds.append(embed)
         return granted_embeds
+
+class StreakListener(Listener):
+    def increment(self, session, user_id: int, amount: int):
+        counter = session.query(Counter).filter_by(user_id=user_id, name=self.signal_name).one_or_none()
+        if counter is None:
+            counter = Counter(user_id=user_id, name=self.signal_name, value=amount)
+            session.add(counter)
+            return
+    
+        if counter.updated_at is not None:
+            # Updated yesterday? +1.
+            if counter.updated_at.date() == (datetime.now(UTC) - timedelta(days=1)).date():
+                counter.value += 1
+                return
+            # Today? +- 0
+            if counter.updated_at.date() == datetime.now(UTC).date():
+                return
+
+        # Reset
+        counter.value = amount
+
+    async def action(self, sender, **kwargs):
+        try:
+            user_id = kwargs.get("user_id")
+            ctx = kwargs.get("ctx")
+            if ctx is None or user_id is None:
+                return
+            embeds = []
+            with Session(self.engine) as session:
+                self.increment(session, user_id, 1)
+                session.flush()
+                embeds.extend(self.check_achievements(session, user_id))
+                session.commit()
+            for embed in embeds:
+                await ctx.send(embed=embed)
+        except Exception:
+            logging.exception("Error in ReadStreak listener action")
+
+
 
 class BooksFinished(Listener):
     signal_name = "books_finished"
@@ -90,7 +141,13 @@ class BooksFinished(Listener):
         except Exception:
             logging.exception("Error in BooksFinished listener action")
 
-
 class ListenerCollection:
     def __init__(self, engine):
-        self.books_finished_listener = BooksFinished(engine)
+        canonical_counts = ["caught_up", "shame", "notes", "quotes", "reviews"]
+        canonical_streaks = ["read", "shamee"]
+        self.listeners = []
+        self.listeners.append(BooksFinished(engine))
+        for signal_name in canonical_counts:
+            self.listeners.append(Listener(engine, signal_name))
+        for signal_name in canonical_streaks:
+            self.listeners.append(StreakListener(engine, signal_name))

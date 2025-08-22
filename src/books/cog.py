@@ -55,6 +55,13 @@ class BookCircle(commands.Cog):
         self.engine = engine
         self.service = BookCircleService(engine)
         self.books_finished = signal("books_finished")
+        self.caught_up = signal("caught_up")
+        self.read_signal = signal("read")
+        self.shame_signal = signal("shame")
+        self.shamee_signal = signal("shamee")
+        self.note_signal = signal("notes")
+        self.quote_signal = signal("quotes")
+        self.review_signal = signal("reviews")
         self.roles = {
             r.name for r in BookClubReaderRole if r != BookClubReaderRole.NONE
         }
@@ -64,8 +71,10 @@ class BookCircle(commands.Cog):
     @send_embed
     async def read(self, ctx: commands.Context, *, progress: str):
         """Set your reading progress (e.g., page, chapter, percent)."""
-        return self.service.set_progress(ctx.channel.id, ctx.author.id, progress)
-
+        match r := self.service.set_progress(ctx.channel.id, ctx.author.id, progress):
+            case Ok():
+                await self.read_signal.send_async(None, ctx=ctx, user_id=ctx.author.id)
+        return r
 
     async def background_shame_task(self):
         await self.bot.wait_until_ready()
@@ -126,10 +135,12 @@ class BookCircle(commands.Cog):
                     )
                 )
                 return
+            await self.shame_signal.send_async(None, ctx=ctx, user_id=ctx.author.id)
             mentions = []
             for reader in not_caught_up:
                 user = reader.user
                 mentions.append(f"<@{user.id}>")
+                await self.shamee_signal.send_async(None, ctx=ctx, user_id=user.id)
             await ctx.send(
                 embed=discord.Embed(
                     title="⏰ Shame!",
@@ -363,7 +374,7 @@ class BookCircle(commands.Cog):
                         color=discord.Color.green(),
                     )
                 )
-                await self.books_finished.send_async(None, book_club_id=club_id, ctx=ctx)
+                await self.books_finished.send_async(None, ctx=ctx, book_club_id=club_id)
                 return
 
         return r
@@ -372,29 +383,39 @@ class BookCircle(commands.Cog):
     @send_embed
     async def review(self, ctx: commands.Context, rating: int, *, text: str):
         """Add a review for the current book as the current user."""
-        return self.service.add_review(ctx.channel.id, ctx.author, text, rating)
+        match r := self.service.add_review(ctx.channel.id, ctx.author, text, rating):
+            case Ok():
+                await self.review_signal.send_async(None, ctx=ctx, user_id=ctx.author.id)
+        return r
 
     @commands.command()
     @send_embed
     async def quote(self, ctx: commands.Context, *, text: str):
         """Add a quote for the current book as the current user."""
         user_id = ctx.author.id
-        return self.service.add_quote(ctx.channel.id, user_id, text)
+        match r := self.service.add_quote(ctx.channel.id, user_id, text):
+            case Ok():
+                await self.quote_signal.send_async(None, ctx=ctx, user_id=user_id)
+        return r
 
     @commands.command()
     @send_embed
     async def note(self, ctx: commands.Context, *, text: str):
         """Add a note for the current book as the current user."""
         channel_id = ctx.channel.id
-        return self.service.add_note(channel_id, ctx.author, text)
+        match r := self.service.add_note(channel_id, ctx.author, text):
+            case Ok():
+                await self.note_signal.send_async(None, ctx=ctx, user_id=ctx.author.id)
+        return r
 
     @commands.command()
     @send_embed
     async def caughtup(self, ctx: commands.Context):
         """You have caught up to the current target."""
-        return self.service.caught_up(
-            ctx.channel.id, ctx.author.id
-        )
+        match r := self.service.caught_up(ctx.channel.id, ctx.author.id):
+            case Ok():
+                await self.caught_up.send_async(None, ctx=ctx, user_id=ctx.author.id)
+        return r
 
     @commands.command()
     @send_embed
