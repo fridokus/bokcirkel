@@ -5,7 +5,6 @@ from functools import wraps
 from typing import Optional
 
 import discord
-from blinker import signal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -70,6 +69,8 @@ class BookCircleService:
             ).scalar_one_or_none()
             if not bcr:
                 return Err("You are not a member of this book club.")
+            if bcr.state == BookClubReaderState.CAUGHT_UP:
+                return Err("You are already caught up.")
             bcr.state = BookClubReaderState.CAUGHT_UP
             session.commit()
             user = session.get(User, user_id)
@@ -609,32 +610,6 @@ class BookCircleService:
             embed = discord.Embed(
                 title="🗒️ Note Added",
                 description=f"{user.name} added a note for '{club.book.title}': {text}",
-            )
-            return Ok(embed)
-
-    @try_except_result
-    def set_reader_state(
-        self, book_club_id: int, user_id: int, state: BookClubReaderState
-    ) -> Result[discord.Embed]:
-        with Session(self.engine) as session:
-            club = session.get(BookClub, book_club_id)
-            if not club:
-                return Err("No book club found.")
-            book_club = club
-            bcr = session.execute(
-                select(BookClubReader).where(
-                    BookClubReader.book_club_id == book_club.id,
-                    BookClubReader.user_id == user_id,
-                )
-            ).scalar_one_or_none()
-            if not bcr:
-                return Err("User is not a member of this book club.")
-            bcr.state = state
-            bcr.progress = club.target
-            session.commit()
-            embed = discord.Embed(
-                title="🔄 Reader State Updated",
-                description=f"Reader state set to {state.value}.",
             )
             return Ok(embed)
 
