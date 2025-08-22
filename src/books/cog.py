@@ -62,7 +62,7 @@ class BookCircle(commands.Cog):
 
     @commands.command()
     @send_embed
-    async def progress(self, ctx: commands.Context, *, progress: str):
+    async def read(self, ctx: commands.Context, *, progress: str):
         """Set your reading progress (e.g., page, chapter, percent)."""
         return self.service.set_progress(ctx.channel.id, ctx.author.id, progress)
 
