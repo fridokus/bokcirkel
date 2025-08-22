@@ -1,6 +1,7 @@
 from ..models import Base
+from datetime import datetime
 from typing import Optional
-from sqlalchemy import Integer, String, Enum, ForeignKey, Table, Column
+from sqlalchemy import Integer, String, Enum, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 
@@ -74,6 +75,7 @@ class BookClubReader(Base):
     quotes: Mapped[list["Quote"]] = relationship("Quote", back_populates="book_club_reader")
     notes: Mapped[list["Note"]] = relationship("Note", back_populates="book_club_reader")
     reviews: Mapped[list["Review"]] = relationship("Review", back_populates="book_club_reader")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
 class BookClub(Base):
     __tablename__ = "book_club"
@@ -84,6 +86,7 @@ class BookClub(Base):
     # Optionally add fields like meeting_date, etc.
     book: Mapped["Book"] = relationship("Book", back_populates="book_club")
     readers: Mapped[list["BookClubReader"]] = relationship("BookClubReader", back_populates="book_club")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
 class User(Base):
     __tablename__ = "user"
@@ -106,6 +109,7 @@ class Quote(Base):
     book_club_reader_id: Mapped[int] = mapped_column(Integer, ForeignKey("book_club_reader.id"), nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     book_club_reader: Mapped["BookClubReader"] = relationship("BookClubReader", back_populates="quotes")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
 class Note(Base):
     __tablename__ = "note"
@@ -113,6 +117,7 @@ class Note(Base):
     book_club_reader_id: Mapped[int] = mapped_column(Integer, ForeignKey("book_club_reader.id"), nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     book_club_reader: Mapped["BookClubReader"] = relationship("BookClubReader", back_populates="notes")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
 class Review(Base):
     __tablename__ = "review"
@@ -121,6 +126,7 @@ class Review(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
     rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     book_club_reader: Mapped["BookClubReader"] = relationship("BookClubReader", back_populates="reviews")
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())
 
 class SuggestedBook(Base):
     __tablename__ = "suggested_book"
@@ -128,4 +134,4 @@ class SuggestedBook(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     author: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     suggester_id: Mapped[int] = mapped_column(Integer, ForeignKey("user.id"), nullable=False)
-    # Optionally add a timestamp or other metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default=func.current_timestamp())

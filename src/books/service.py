@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from dataclasses import dataclass
 from functools import wraps
 from typing import Optional
@@ -40,6 +41,7 @@ class ServiceBook:
     id: int
     title: str
     suggester_id: int
+    suggested_at: datetime
     author: Optional[str] = None
 
 
@@ -126,6 +128,7 @@ class BookCircleService:
                         title=s.title,
                         author=s.author,
                         suggester_id=s.suggester_id,
+                        suggested_at=s.created_at,
                     )
                     for s in suggestions
                 ]
@@ -272,15 +275,16 @@ class BookCircleService:
             reviews = []
             for reader in club.readers:
                 for review in reader.reviews:
-                    reviews.append((reader.user.name, review.text, review.rating))
+                    reviews.append((reader.user.name, review.text, review.rating, review.created_at))
             if not reviews:
                 return Err("No reviews found for this book club.")
             embed = discord.Embed(title=f"📝 Reviews for {club.book.title}")
-            for name, text, rating in reviews:
+            for name, text, rating, created in reviews:
                 emoji = "⭐"
+                created_str = created.strftime('%Y-%m-%d %H:%M') if created else ''
                 embed.add_field(
                     name=f"{name} (Rating: {rating if rating is not None else 'N/A'})",
-                    value=f"{emoji} {text}",
+                    value=f"{emoji} {text}\n*Added: {created_str}*",
                     inline=False,
                 )
             return Ok(embed)
@@ -294,13 +298,14 @@ class BookCircleService:
             notes = []
             for reader in club.readers:
                 for note in reader.notes:
-                    notes.append((reader.user.name, note.text))
+                    notes.append((reader.user.name, note.text, note.created_at))
             if not notes:
                 return Err("No notes found for this book club.")
             embed = discord.Embed(title=f"🗒️ Notes for {club.book.title}")
-            for name, text in notes:
+            for name, text, created in notes:
                 emoji = "🗒️"
-                embed.add_field(name=name, value=f"{emoji} {text}", inline=False)
+                created_str = created.strftime('%Y-%m-%d %H:%M') if created else ''
+                embed.add_field(name=name, value=f"{emoji} {text}\n*Added: {created_str}*", inline=False)
             return Ok(embed)
 
     @try_except_result
@@ -312,13 +317,14 @@ class BookCircleService:
             quotes = []
             for reader in club.readers:
                 for quote in reader.quotes:
-                    quotes.append((reader.user.name, quote.text))
+                    quotes.append((reader.user.name, quote.text, quote.created_at))
             if not quotes:
                 return Err("No quotes found for this book club.")
             embed = discord.Embed(title=f"💬 Quotes for {club.book.title}")
-            for name, text in quotes:
+            for name, text, created in quotes:
                 emoji = "💬"
-                embed.add_field(name=name, value=f"{emoji} {text}", inline=False)
+                created_str = created.strftime('%Y-%m-%d %H:%M') if created else ''
+                embed.add_field(name=name, value=f"{emoji} {text}\n*Added: {created_str}*", inline=False)
             return Ok(embed)
 
     @try_except_result

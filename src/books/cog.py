@@ -428,7 +428,6 @@ class BookCircle(commands.Cog):
             # Limit it to 1 day.
             seconds = 3600 * 24
         result = self.service.get_suggested_books()
-        logging.info(f"Poll books result: {result}")
         match result:
             case Ok(suggestions):
                 if not suggestions:
