@@ -212,6 +212,12 @@ class BookCircle(commands.Cog):
                 await self.__synchronize_roles(ctx)
         return r
 
+    @commands.command(name="roles")
+    @send_embed
+    async def roles(self, ctx: commands.Context):
+        """Show all current roles for members in this book club."""
+        return self.service.list_roles(ctx.channel.id)
+
     @commands.command()
     @send_embed
     async def mybooks(self, ctx: commands.Context) -> Result[discord.Embed]:
