@@ -30,6 +30,34 @@ class BookClubReaderRole(enum.Enum):
     DETAIL_SPOTTER = "detail_spotter"
     MOOD_SPOTTER = "mood_spotter"
 
+    @property
+    def emoji(self) -> str:
+        return {
+            BookClubReaderRole.NONE: "❔",
+            BookClubReaderRole.FACILITATOR: "🎤",
+            BookClubReaderRole.SUMMARIZER: "📝",
+            BookClubReaderRole.QUOTE_PICKER: "💬",
+            BookClubReaderRole.THEME_SPOTTER: "🔎",
+            BookClubReaderRole.LINK_FINDER: "🔗",
+            BookClubReaderRole.DEVILS_ADVOCATE: "😈",
+            BookClubReaderRole.DETAIL_SPOTTER: "🕵️",
+            BookClubReaderRole.MOOD_SPOTTER: "🎭",
+        }.get(self, "📚")
+
+    @property
+    def description(self) -> str:
+        return {
+            BookClubReaderRole.NONE: "No role assigned.",
+            BookClubReaderRole.FACILITATOR: "Leads the discussion and keeps the group on track.",
+            BookClubReaderRole.SUMMARIZER: "Summarizes the chapters or sections read.",
+            BookClubReaderRole.QUOTE_PICKER: "Selects and shares memorable quotes.",
+            BookClubReaderRole.THEME_SPOTTER: "Identifies and discusses themes in the book.",
+            BookClubReaderRole.LINK_FINDER: "Finds and shares relevant links or resources.",
+            BookClubReaderRole.DEVILS_ADVOCATE: "Challenges ideas and encourages debate.",
+            BookClubReaderRole.DETAIL_SPOTTER: "Notices and brings up interesting details.",
+            BookClubReaderRole.MOOD_SPOTTER: "Comments on the mood, tone, and atmosphere.",
+        }.get(self, self.value)
+
 
 # Association object for BookClub readers
 class BookClubReader(Base):
