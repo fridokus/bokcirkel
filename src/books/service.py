@@ -1,10 +1,11 @@
 import logging
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Optional
 
 import discord
+from blinker import signal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -45,6 +46,12 @@ class ServiceBook:
     author: Optional[str] = None
 
 
+# Put this in a utility function.
+def relative_time(d: datetime) -> str:
+    dt_utc = d.replace(tzinfo=timezone.utc)
+    return f"<t:{int(dt_utc.timestamp())}:R>"
+
+
 class BookCircleService:
     def __init__(self, engine):
         self.engine = engine
@@ -73,11 +80,15 @@ class BookCircleService:
                 description=f"{user.name} has caught up to the current target! Give them a round of applause! 👏",
                 color=discord.Color.gold(),
             )
-            embed.set_thumbnail(url="https://media.giphy.com/media/111ebonMs90YLu/giphy.gif")
+            embed.set_thumbnail(
+                url="https://media.giphy.com/media/111ebonMs90YLu/giphy.gif"
+            )
             return Ok(embed)
 
     @try_except_result
-    def set_progress(self, book_club_id: int, user_id: int, progress: str) -> Result[discord.Embed]:
+    def set_progress(
+        self, book_club_id: int, user_id: int, progress: str
+    ) -> Result[discord.Embed]:
         with Session(self.engine) as session:
             bcr = session.execute(
                 select(BookClubReader).where(
@@ -87,7 +98,6 @@ class BookCircleService:
             ).scalar_one_or_none()
             if not bcr:
                 return Err("You are not a member of this book club.")
-            bcr_progress = getattr(bcr, "progress", None)
             bcr.progress = progress
             session.commit()
             embed = discord.Embed(
@@ -120,7 +130,9 @@ class BookCircleService:
     @try_except_result
     def get_suggested_books(self, limit=10) -> Result[list]:
         with Session(self.engine) as session:
-            suggestions = session.execute(select(SuggestedBook).limit(limit)).scalars().all()
+            suggestions = (
+                session.execute(select(SuggestedBook).limit(limit)).scalars().all()
+            )
             return Ok(
                 [
                     ServiceBook(
@@ -146,10 +158,14 @@ class BookCircleService:
 
     class BookAppliedToClub:
         pass
+
     class BookClubNotFound:
         pass
+
     @try_except_result
-    def pop_suggested_book(self, book_club_id: int, suggestion_id: int) -> Result[BookAppliedToClub|BookClubNotFound]:
+    def pop_suggested_book(
+        self, book_club_id: int, suggestion_id: int
+    ) -> Result[BookAppliedToClub | BookClubNotFound]:
         with Session(self.engine) as session:
             club = session.get(BookClub, book_club_id)
             suggestion = session.get(SuggestedBook, suggestion_id)
@@ -163,7 +179,6 @@ class BookCircleService:
             if club:
                 return Ok(BookCircleService.BookAppliedToClub())
             return Ok(BookCircleService.BookClubNotFound())
-
 
     @try_except_result
     def shuffle_roles(self, book_club_id: int) -> Result[discord.Embed]:
@@ -221,8 +236,7 @@ class BookCircleService:
             # Sort readers by enum order
             role_order = list(BookClubReaderRole)
             sorted_readers = sorted(
-                club.readers,
-                key=lambda r: role_order.index(r.role)
+                club.readers, key=lambda r: role_order.index(r.role)
             )
 
             for reader in sorted_readers:
@@ -275,13 +289,20 @@ class BookCircleService:
             reviews = []
             for reader in club.readers:
                 for review in reader.reviews:
-                    reviews.append((reader.user.name, review.text, review.rating, review.created_at))
+                    reviews.append(
+                        (
+                            reader.user.name,
+                            review.text,
+                            review.rating,
+                            review.created_at,
+                        )
+                    )
             if not reviews:
                 return Err("No reviews found for this book club.")
             embed = discord.Embed(title=f"📝 Reviews for {club.book.title}")
             for name, text, rating, created in reviews:
                 emoji = "⭐"
-                created_str = created.strftime('%Y-%m-%d %H:%M') if created else ''
+                created_str = relative_time(created)
                 embed.add_field(
                     name=f"{name} (Rating: {rating if rating is not None else 'N/A'})",
                     value=f"{emoji} {text}\n*Added: {created_str}*",
@@ -304,8 +325,12 @@ class BookCircleService:
             embed = discord.Embed(title=f"🗒️ Notes for {club.book.title}")
             for name, text, created in notes:
                 emoji = "🗒️"
-                created_str = created.strftime('%Y-%m-%d %H:%M') if created else ''
-                embed.add_field(name=name, value=f"{emoji} {text}\n*Added: {created_str}*", inline=False)
+                created_str = relative_time(created)
+                embed.add_field(
+                    name=name,
+                    value=f"{emoji} {text}\n*Added: {created_str}*",
+                    inline=False,
+                )
             return Ok(embed)
 
     @try_except_result
@@ -323,8 +348,12 @@ class BookCircleService:
             embed = discord.Embed(title=f"💬 Quotes for {club.book.title}")
             for name, text, created in quotes:
                 emoji = "💬"
-                created_str = created.strftime('%Y-%m-%d %H:%M') if created else ''
-                embed.add_field(name=name, value=f"{emoji} {text}\n*Added: {created_str}*", inline=False)
+                created_str = relative_time(created)
+                embed.add_field(
+                    name=name,
+                    value=f"{emoji} {text}\n*Added: {created_str}*",
+                    inline=False,
+                )
             return Ok(embed)
 
     @try_except_result
@@ -465,11 +494,13 @@ class BookCircleService:
     @try_except_result
     def set_target(
         self, book_club_id: int, state: BookState, target: Optional[str] = None
-    ) -> Result[str]:
+    ) -> Result[int]:
         with Session(self.engine) as session:
             club = session.get(BookClub, book_club_id)
             if not club:
                 return Err("No book club found.")
+            if club.state == BookState.COMPLETED:
+                return Err("Book club is already completed.")
             club.state = state
             if target is None:
                 return Err("Target chapter must be specified.")
@@ -483,7 +514,7 @@ class BookCircleService:
                     reader.state = BookClubReaderState.COMPLETED
 
             session.commit()
-            return Ok(f"Book club status set to {state.value}. New target is {target or club.target}")
+            return Ok(book_club_id)
 
     @try_except_result
     def add_review(
@@ -662,7 +693,11 @@ class BookCircleService:
             progress_lines = []
             for reader in club.readers:
                 progress = getattr(reader, "progress", None)
-                progress_lines.append(f"{reader.user.name}: {progress or 'No progress set'}")
+                progress_lines.append(
+                    f"{reader.user.name}: {progress or 'No progress set'}"
+                )
             if progress_lines:
-                embed.add_field(name="Progress", value="\n".join(progress_lines), inline=False)
+                embed.add_field(
+                    name="Progress", value="\n".join(progress_lines), inline=False
+                )
             return Ok(embed)
