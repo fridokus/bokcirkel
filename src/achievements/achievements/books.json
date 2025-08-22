@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Bookworm",
+    "description": "Finish 1 book.",
+    "icon": "📚",
+    "rule": {"counter": "books_finished", "value": 1}
+  },
+  {
+    "name": "Avid Reader",
+    "description": "Finish 10 books.",
+    "icon": "🏅",
+    "rule": {"counter": "books_finished", "value": 10}
+  }
+]

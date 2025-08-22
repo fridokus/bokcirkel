@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from blinker import signal
 from functools import wraps
 from typing import Optional
 
@@ -30,10 +31,30 @@ def send_embed(func):
 
 
 class BookCircle(commands.Cog):
+
+    @commands.command()
+    async def deleteallchannels(self, ctx ):
+        """Delete all channels in the server (admin only)."""
+        if ctx.guild is None:
+            return Err("This command must be used in a server.")
+        if not ctx.author.guild_permissions.administrator:
+            return Err("You must be an administrator to use this command.")
+        for channel in ctx.guild.channels:
+            try:
+                asyncio.create_task(channel.delete())
+            except Exception:
+                logging.exception(f"Failed to delete channel {channel.id}")
+        return Ok(discord.Embed(
+            title="Channels Deleted",
+            description="All channels have been deleted.",
+            color=discord.Color.green()
+        ))
+
     def __init__(self, bot: commands.Bot, engine):
         self.bot = bot
         self.engine = engine
         self.service = BookCircleService(engine)
+        self.books_finished = signal("books_finished")
         self.roles = {
             r.name for r in BookClubReaderRole if r != BookClubReaderRole.NONE
         }
@@ -120,6 +141,8 @@ class BookCircle(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         """Event handler for when the bot is ready."""
+        logging.info("BookCircle Cog is ready.")
+        
         self.bot.loop.create_task(self.background_shame_task())
 
         for guild in self.bot.guilds:
@@ -332,7 +355,7 @@ class BookCircle(commands.Cog):
     async def finish(self, ctx: commands.Context):
         """The book is finished."""
         match r := self.service.set_target(ctx.channel.id, BookState.COMPLETED, "Done"):
-            case Ok():
+            case Ok(club_id):
                 await ctx.send(
                     embed=discord.Embed(
                         title="📚 Book Finished",
@@ -340,6 +363,7 @@ class BookCircle(commands.Cog):
                         color=discord.Color.green(),
                     )
                 )
+                await self.books_finished.send_async(None, book_club_id=club_id, ctx=ctx)
                 return
 
         return r

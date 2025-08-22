@@ -4,6 +4,7 @@ from discord.ext import commands
 from sqlalchemy import create_engine
 from . import models
 from .books.cog import BookCircle
+from .achievements.cog import Achievements
 
 
 from sqlalchemy.event import listens_for
@@ -26,7 +27,7 @@ class Bot(commands.Bot):
     def __init__(self, intents: discord.Intents) -> None:
         engine = create_engine("sqlite:///app.db", echo=True)
         models.Base.metadata.create_all(engine)
-        self._cogs = [BookCircle(self, engine)]
+        self._cogs = [BookCircle(self, engine), Achievements(self, engine)]
         super().__init__(command_prefix="!", intents=intents)
 
     async def on_command_error(self, ctx: commands.Context, error: Exception) -> None:
