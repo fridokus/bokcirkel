@@ -214,7 +214,7 @@ class BookCircle(commands.Cog):
 
     @commands.command(name="roles")
     @send_embed
-    async def roles(self, ctx: commands.Context):
+    async def roles_command(self, ctx: commands.Context):
         """Show all current roles for members in this book club."""
         return self.service.list_roles(ctx.channel.id)
 
