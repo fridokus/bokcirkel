@@ -186,18 +186,20 @@ class BookCircleService:
             for reader, role in zip(readers, roles):
                 reader.role = role
             session.commit()
+
             embed = discord.Embed(
                 title="🔀 Roles Shuffled",
                 description="Roles have been randomly assigned to all readers.",
             )
             for reader in readers:
-                emoji = "🎭"
+                role = reader.role
                 embed.add_field(
                     name=reader.user.name,
-                    value=f"{emoji} {reader.role.value}",
+                    value=f"{role.emoji} {role.value}",
                     inline=True,
                 )
             return Ok(embed)
+
 
     @try_except_result
     def get_books_for_user(

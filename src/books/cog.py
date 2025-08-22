@@ -146,24 +146,15 @@ class BookCircle(commands.Cog):
     @commands.command()
     async def roleinfo(self, ctx: commands.Context):
         """Show information about the possible roles in this book club."""
-        role_descriptions = {
-            BookClubReaderRole.FACILITATOR: "🧑‍💼 Leads the discussion and keeps the group on track.",
-            BookClubReaderRole.SUMMARIZER: "📝 Summarizes the chapters or sections read.",
-            BookClubReaderRole.QUOTE_PICKER: "💬 Selects and shares memorable quotes.",
-            BookClubReaderRole.THEME_SPOTTER: "🔎 Identifies and discusses themes in the book.",
-            BookClubReaderRole.LINK_FINDER: "🔗 Finds and shares relevant links or resources.",
-            BookClubReaderRole.DEVILS_ADVOCATE: "😈 Challenges ideas and encourages debate.",
-            BookClubReaderRole.DETAIL_SPOTTER: "🧐 Notices and brings up interesting details.",
-            BookClubReaderRole.MOOD_SPOTTER: "🎭 Comments on the mood, tone, and atmosphere.",
-        }
         embed = discord.Embed(title="Book Club Roles", color=discord.Color.blue())
         for role in BookClubReaderRole:
             if role == BookClubReaderRole.NONE:
                 continue
             name = role.name.title().replace("_", " ")
-            desc = role_descriptions.get(role, role.value)
+            desc = f"{role.emoji} {role.description}"
             embed.add_field(name=name, value=desc, inline=False)
         await ctx.send(embed=embed)
+
 
     async def __synchronize_roles(self, ctx):
         """Synchronize roles for all members in the book club."""
