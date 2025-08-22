@@ -1,14 +1,170 @@
 [
   {
+    "name": "Note Taker",
+    "description": "Add 1 note.",
+    "icon": "📝",
+    "rule": {"counter": "notes", "value": 1}
+  },
+  {
+    "name": "Notebook Filler",
+    "description": "Add 10 notes.",
+    "icon": "📒",
+    "rule": {"counter": "notes", "value": 10}
+  },
+  {
+    "name": "Annotation Ace",
+    "description": "Add 50 notes.",
+    "icon": "📚📝",
+    "rule": {"counter": "notes", "value": 50}
+  },
+  {
+    "name": "Quoter",
+    "description": "Add 1 quote.",
+    "icon": "💬",
+    "rule": {"counter": "quotes", "value": 1}
+  },
+  {
+    "name": "Quote Collector",
+    "description": "Add 10 quotes.",
+    "icon": "🗣️",
+    "rule": {"counter": "quotes", "value": 10}
+  },
+  {
+    "name": "Quotation Master",
+    "description": "Add 50 quotes.",
+    "icon": "📖💬",
+    "rule": {"counter": "quotes", "value": 50}
+  },
+  {
+    "name": "Reviewer",
+    "description": "Write 1 review.",
+    "icon": "⭐",
+    "rule": {"counter": "reviews", "value": 1}
+  },
+  {
+    "name": "Critic",
+    "description": "Write 10 reviews.",
+    "icon": "📝⭐",
+    "rule": {"counter": "reviews", "value": 10}
+  },
+  {
+    "name": "Literary Judge",
+    "description": "Write 50 reviews.",
+    "icon": "🏅⭐",
+    "rule": {"counter": "reviews", "value": 50}
+  },
+  {
     "name": "Bookworm",
     "description": "Finish 1 book.",
     "icon": "📚",
     "rule": {"counter": "books_finished", "value": 1}
   },
   {
+    "name": "Book Collector",
+    "description": "Finish 5 books.",
+    "icon": "📚📚",
+    "rule": {"counter": "books_finished", "value": 5}
+  },
+  {
     "name": "Avid Reader",
     "description": "Finish 10 books.",
     "icon": "🏅",
     "rule": {"counter": "books_finished", "value": 10}
+  },
+  {
+    "name": "Library Legend",
+    "description": "Finish 25 books.",
+    "icon": "🏆",
+    "rule": {"counter": "books_finished", "value": 25}
+  },
+  {
+    "name": "Streak Starter",
+    "description": "Maintain a 3-day reading streak.",
+    "icon": "🔥",
+    "rule": {"counter": "read_streak", "value": 3}
+  },
+  {
+    "name": "On Fire!",
+    "description": "Maintain a 7-day reading streak.",
+    "icon": "🔥🔥",
+    "rule": {"counter": "read_streak", "value": 7}
+  },
+  {
+    "name": "Unstoppable",
+    "description": "Maintain a 30-day reading streak.",
+    "icon": "🚀",
+    "rule": {"counter": "read_streak", "value": 30}
+  },
+  {
+    "name": "Streak Hero",
+    "description": "Maintain a 100-day reading streak.",
+    "icon": "🌟",
+    "rule": {"counter": "read_streak", "value": 100}
+  },
+  {
+    "name": "Caught Up Once",
+    "description": "Catch up to the target once.",
+    "icon": "⏱️",
+    "rule": {"counter": "caught_up", "value": 1}
+  },
+  {
+    "name": "Always On Time",
+    "description": "Catch up to the target 10 times.",
+    "icon": "⏱️⏱️",
+    "rule": {"counter": "caught_up", "value": 10}
+  },
+  {
+    "name": "Punctual Pro",
+    "description": "Catch up to the target 25 times.",
+    "icon": "⏱️⏱️⏱️",
+    "rule": {"counter": "caught_up", "value": 25}
+  },
+  {
+    "name": "Never Behind",
+    "description": "Catch up to the target 50 times.",
+    "icon": "🏆",
+    "rule": {"counter": "caught_up", "value": 50}
+  },
+  {
+    "name": "Shame Spiral",
+    "description": "Be shamed 3 days in a row.",
+    "icon": "😳",
+    "rule": {"counter": "shamee", "value": 3}
+  },
+  {
+    "name": "Shame Magnet",
+    "description": "Be shamed 7 days in a row.",
+    "icon": "🧲",
+    "rule": {"counter": "shamee", "value": 7}
+  },
+  {
+    "name": "Shame Master",
+    "description": "Be shamed 15 days in a row.",
+    "icon": "🥵",
+    "rule": {"counter": "shamee", "value": 15}
+  },
+  {
+    "name": "Legendary Slacker",
+    "description": "Be shamed 30 days in a row.",
+    "icon": "🥶",
+    "rule": {"counter": "shamee", "value": 30}
+  },
+  {
+    "name": "Shamebringer",
+    "description": "Shame others 10 times.",
+    "icon": "🔔",
+    "rule": {"counter": "shame", "value": 10}
+  },
+  {
+    "name": "Serial Shamer",
+    "description": "Shame others 25 times.",
+    "icon": "🔔🔔",
+    "rule": {"counter": "shame", "value": 25}
+  },
+  {
+    "name": "Shame Supreme",
+    "description": "Shame others 50 times.",
+    "icon": "👑",
+    "rule": {"counter": "shame", "value": 50}
   }
 ]
