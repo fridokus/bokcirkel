@@ -200,6 +200,39 @@ class BookCircleService:
                 )
             return Ok(embed)
 
+    @try_except_result
+    def list_roles(self, book_club_id: int) -> Result[discord.Embed]:
+        with Session(self.engine) as session:
+            club = session.get(BookClub, book_club_id)
+            if not club:
+                return Err("This channel does not have a registered book club.")
+            if not club.readers:
+                return Err("No one has joined this book club yet.")
+
+            embed = discord.Embed(
+                title="📖 Current Roles",
+                description="Here are the current roles in this book club:",
+                color=discord.Color.blue(),
+            )
+
+            # Sort readers by enum order
+            role_order = list(BookClubReaderRole)
+            sorted_readers = sorted(
+                club.readers,
+                key=lambda r: role_order.index(r.role)
+            )
+
+            for reader in sorted_readers:
+                role = reader.role
+                if role == BookClubReaderRole.NONE:
+                    continue  # skip NONE if you don't want to show it
+                embed.add_field(
+                    name=reader.user.name,
+                    value=f"{role.emoji} {role.value.replace('_', ' ').title()}",
+                    inline=True,
+                )
+
+            return Ok(embed)
 
     @try_except_result
     def get_books_for_user(
