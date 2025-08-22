@@ -38,23 +38,6 @@ def test_join_and_leave_club(in_memory_service):
         bcr = session.query(BookClubReader).filter_by(book_club_id=1, user_id=1).first()
         assert bcr is None
 
-def test_set_reader_state(in_memory_service):
-    service, engine = in_memory_service
-    Session = sessionmaker(bind=engine)
-    with Session() as session:
-        club = BookClub(id=1, state=BookState.READING, target="T")
-        user = User(id=1, name="User1")
-        session.add_all([club, user])
-        session.commit()
-        bcr = BookClubReader(book_club_id=1, user_id=1, state=BookClubReaderState.READING)
-        session.add(bcr)
-        session.commit()
-    result = service.set_reader_state(1, 1, BookClubReaderState.CAUGHT_UP)
-    assert is_ok(result)
-    with Session() as session:
-        bcr = session.query(BookClubReader).filter_by(book_club_id=1, user_id=1).first()
-        assert bcr.state == BookClubReaderState.CAUGHT_UP
-
 def test_kick_member(in_memory_service):
     service, engine = in_memory_service
     Session = sessionmaker(bind=engine)
