@@ -31,6 +31,7 @@ class Listener:
             counter.value += amount
 
     async def action(self, sender, **kwargs):
+        logging.info(f"Action triggered for signal: {self.signal_name} with kwargs: {kwargs}")
         try:
             user_id = kwargs.get("user_id")
             ctx = kwargs.get("ctx")
@@ -119,6 +120,7 @@ class BooksFinished(Listener):
     signal_name = "books_finished"
 
     async def action(self, sender, **kwargs):
+        logging.info(f"Action triggered for signal: {self.signal_name} with kwargs: {kwargs}")
         try:
             book_club_id = kwargs.get("book_club_id")
             ctx = kwargs.get("ctx")
