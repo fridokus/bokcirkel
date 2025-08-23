@@ -31,24 +31,24 @@ def send_embed(func):
 
 
 class BookCircle(commands.Cog):
-
-    @commands.command()
-    async def deleteallchannels(self, ctx ):
-        """Delete all channels in the server (admin only)."""
-        if ctx.guild is None:
-            return Err("This command must be used in a server.")
-        if not ctx.author.guild_permissions.administrator:
-            return Err("You must be an administrator to use this command.")
-        for channel in ctx.guild.channels:
-            try:
-                asyncio.create_task(channel.delete())
-            except Exception:
-                logging.exception(f"Failed to delete channel {channel.id}")
-        return Ok(discord.Embed(
-            title="Channels Deleted",
-            description="All channels have been deleted.",
-            color=discord.Color.green()
-        ))
+    # Debugging command for local development
+    # @commands.command()
+    # async def deleteallchannels(self, ctx ):
+    #     """Delete all channels in the server (admin only)."""
+    #     if ctx.guild is None:
+    #         return Err("This command must be used in a server.")
+    #     if not ctx.author.guild_permissions.administrator:
+    #         return Err("You must be an administrator to use this command.")
+    #     for channel in ctx.guild.channels:
+    #         try:
+    #             asyncio.create_task(channel.delete())
+    #         except Exception:
+    #             logging.exception(f"Failed to delete channel {channel.id}")
+    #     return Ok(discord.Embed(
+    #         title="Channels Deleted",
+    #         description="All channels have been deleted.",
+    #         color=discord.Color.green()
+    #     ))
 
     def __init__(self, bot: commands.Bot, engine):
         self.bot = bot
