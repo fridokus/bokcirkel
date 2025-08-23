@@ -1,3 +1,4 @@
+import logging
 import os
 import json
 from .model import Achievement
@@ -55,6 +56,7 @@ def load_achievements_from_json(engine, achievements_dir=None):
         achievements_dir = os.path.join(os.path.dirname(__file__), "achievements")
     from sqlalchemy.orm import Session
     with Session(engine) as session:
+        count = 0
         for filename in os.listdir(achievements_dir):
             if not filename.endswith(".json"):
                 continue
@@ -62,6 +64,7 @@ def load_achievements_from_json(engine, achievements_dir=None):
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 for ach in data:
+                    count += 1
                     # Upsert by name
                     existing = session.query(Achievement).filter_by(name=ach["name"]).one_or_none()
                     if existing:
@@ -75,4 +78,6 @@ def load_achievements_from_json(engine, achievements_dir=None):
                             icon=ach.get("icon"),
                             rule_json=ach["rule"]
                         ))
+        logging.info(f"Loaded {count} achievements from JSON.")
+
         session.commit()
