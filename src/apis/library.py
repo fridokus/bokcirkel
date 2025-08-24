@@ -1,6 +1,7 @@
 import json
 import requests
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 
 # Load Hardcover API key from file
@@ -18,23 +19,15 @@ HEADERS = {
 }
 
 
+@dataclass
 class Book:
     """Class representing a book."""
-    def __init__(self, title, author, year, pages, rating):
-        self.title: str = title
-        self.author: str = author
-        self.year: int = year
-        self.pages: int = pages
-        self.rating: float= rating
-
-    def __str__(self):
-        # Format numeric ratings to 3 decimal points, stripping unnecessary zeros
-        if isinstance(self.rating, (int, float)):
-            rating_str = f"{self.rating:.3f}".rstrip('0').rstrip('.')
-        else:
-            rating_str = str(self.rating)
-        return f"{self.title} by {self.author} ({self.year}) - {self.pages} pages, Rating: {rating_str}"
-
+    title: str
+    author: str
+    year: int|None
+    pages: int|None
+    rating: float|None
+    img_url: str|None
 
 def fetch_book(query: str):
     """Fetch book information from Hardcover API by title."""
@@ -80,9 +73,14 @@ def fetch_book(query: str):
     if contributions and contributions[0].get("author") and contributions[0]["author"].get("name"):
         author = contributions[0]["author"]["name"]
 
-    year = str(book_doc.get("release_year", "Unknown"))
-    pages = book_doc.get("pages", "Unknown")
-    rating = book_doc.get("rating", "No rating")
+    year = book_doc.get("release_year")
+    pages = book_doc.get("pages")
+    rating = book_doc.get("rating")
+
+
+    img_url = None
+    if book_doc.get("image"):
+        img_url = book_doc.get("image").get("url")
 
     logging.info(f"Found book: {title} by {author} ({year})")
-    return Book(title, author, year, pages, rating)
+    return Book(title=title, author=author, year=year, pages=pages, rating=rating, img_url=img_url)

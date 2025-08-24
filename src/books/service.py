@@ -455,10 +455,9 @@ class BookCircleService:
         )
         return Ok(embed)
 
-    # match r := self.service.create_or_update_book(ctx.channel.id, book_info.title, book_info.author, book_info.year, book_info.pages, book_info.rating):
     @try_except_result
     def create_or_update_book(
-        self, book_club_id: int, title: Optional[str], author: Optional[str] = None, year: Optional[int] = None, pages: Optional[int] = None, rating: Optional[float] = None
+        self, book_club_id: int, title: Optional[str], author: Optional[str] = None, year: Optional[int] = None, pages: Optional[int] = None, rating: Optional[float] = None, img_url: Optional[str] = None
     ) -> Result[discord.Embed]:
         """Create a new book or update an existing one. Returns Ok(Book) or Err(str)."""
         with Session(self.engine) as session:
@@ -468,7 +467,7 @@ class BookCircleService:
             book = book_club.book
             if book is None:
                 # Create new book
-                book = Book(title=title, author=author)
+                book = Book(title=title, author=author, year=year, pages=pages, rating=rating, img_url=img_url)
                 book_club.book = book
                 session.add(book)
                 session.commit()
@@ -490,6 +489,8 @@ class BookCircleService:
                 book.pages = pages
             if rating is not None:
                 book.rating = rating
+            if img_url is not None:
+                book.img_url = img_url
             session.commit()
             return Ok(
                 discord.Embed(
@@ -662,11 +663,10 @@ class BookCircleService:
                 if club.readers
                 else "No readers yet"
             )
-            embed = discord.Embed(title=f"📊 Book Club Status: {club.book.title}")
+            embed = discord.Embed(title=club.book.title)
             embed.add_field(
-                name="Book",
+                name="Book Info",
                 value=(
-                    f"**{club.book.title}**\n"
                     f"✍️ Author: {club.book.author or 'Unknown'}\n"
                     f"📅 Year: {club.book.year if club.book.year is not None else 'N/A'}\n"
                     f"📄 Pages: {club.book.pages if club.book.pages is not None else 'N/A'}\n"
@@ -674,6 +674,8 @@ class BookCircleService:
                 ),
                 inline=False,
             )
+            if club.book.img_url:
+                embed.set_image(url=club.book.img_url)
             embed.add_field(name="State", value=f"📖 {club.state.value}", inline=False)
             embed.add_field(
                 name="Target", value=f"🎯 {club.target or 'N/A'}", inline=False

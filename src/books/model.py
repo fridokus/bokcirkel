@@ -103,6 +103,7 @@ class Book(Base):
     year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     pages: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    img_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     # Add more fields as needed (e.g., year, isbn)
     book_club: Mapped[Optional["BookClub"]] = relationship("BookClub", back_populates="book")
 
