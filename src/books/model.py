@@ -1,7 +1,7 @@
 from ..models import Base
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Integer, String, Enum, ForeignKey, DateTime, func
+from sqlalchemy import Float, Integer, String, Enum, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 
@@ -83,6 +83,7 @@ class BookClub(Base):
     book_id: Mapped[int] = mapped_column(Integer, ForeignKey("book.id"), nullable=True)
     target: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     state: Mapped[BookState] = mapped_column(Enum(BookState), nullable=False, default=BookState.PLANNED)
+
     # Optionally add fields like meeting_date, etc.
     book: Mapped["Book"] = relationship("Book", back_populates="book_club")
     readers: Mapped[list["BookClubReader"]] = relationship("BookClubReader", back_populates="book_club")
@@ -99,6 +100,9 @@ class Book(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     author: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    rating: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    pages: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     # Add more fields as needed (e.g., year, isbn)
     book_club: Mapped[Optional["BookClub"]] = relationship("BookClub", back_populates="book")
 

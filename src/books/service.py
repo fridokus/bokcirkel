@@ -455,9 +455,10 @@ class BookCircleService:
         )
         return Ok(embed)
 
+    # match r := self.service.create_or_update_book(ctx.channel.id, book_info.title, book_info.author, book_info.year, book_info.pages, book_info.rating):
     @try_except_result
     def create_or_update_book(
-        self, book_club_id: int, title: Optional[str], author: Optional[str] = None
+        self, book_club_id: int, title: Optional[str], author: Optional[str] = None, year: Optional[int] = None, pages: Optional[int] = None, rating: Optional[float] = None
     ) -> Result[discord.Embed]:
         """Create a new book or update an existing one. Returns Ok(Book) or Err(str)."""
         with Session(self.engine) as session:
@@ -483,6 +484,12 @@ class BookCircleService:
                 book.title = title
             if author is not None:
                 book.author = author
+            if year is not None:
+                book.year = year
+            if pages is not None:
+                book.pages = pages
+            if rating is not None:
+                book.rating = rating
             session.commit()
             return Ok(
                 discord.Embed(
@@ -656,6 +663,17 @@ class BookCircleService:
                 else "No readers yet"
             )
             embed = discord.Embed(title=f"📊 Book Club Status: {club.book.title}")
+            embed.add_field(
+                name="Book",
+                value=(
+                    f"**{club.book.title}**\n"
+                    f"✍️ Author: {club.book.author or 'Unknown'}\n"
+                    f"📅 Year: {club.book.year if club.book.year is not None else 'N/A'}\n"
+                    f"📄 Pages: {club.book.pages if club.book.pages is not None else 'N/A'}\n"
+                    f"⭐ Rating: {f"{club.book.rating:.2f}" if club.book.rating is not None else 'N/A'}"
+                ),
+                inline=False,
+            )
             embed.add_field(name="State", value=f"📖 {club.state.value}", inline=False)
             embed.add_field(
                 name="Target", value=f"🎯 {club.target or 'N/A'}", inline=False

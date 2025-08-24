@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 from sqlalchemy.orm import Session
 
+from ..apis import library 
 from ..result_types import *
 from .model import BookClub, BookClubReaderRole, BookClubReaderState, BookState
 from .rotate_roles import rotate_roles
@@ -328,7 +329,7 @@ class BookCircle(commands.Cog):
     @commands.command()
     @send_embed
     @commands.has_permissions(administrator=True)
-    async def book(
+    async def setbook(
         self,
         ctx: commands.Context,
         title: Optional[str] = None,
@@ -338,6 +339,13 @@ class BookCircle(commands.Cog):
         match r := self.service.create_or_update_book(ctx.channel.id, title, author):
             case Ok():
                 if isinstance(ctx.channel, discord.TextChannel):
+                    embed = discord.Embed(title="📚 Rename Channel", description="Would you like to rename the channel? (yes/no)", color=discord.Color.blue())
+                    await ctx.send(embed=embed)
+
+                    msg = await self.bot.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30.0)
+                    if msg.content.lower() not in set(["y", "yes"]):
+                        return r
+
                     await ctx.channel.edit(name=f"📚 {title or 'bokcirkel'}")
                 return r
             case Err():
@@ -464,6 +472,45 @@ class BookCircle(commands.Cog):
                     )
                 return Ok(embed)
         return r
+
+    @commands.command()
+    @send_embed
+    async def book(self, ctx: commands.Context, *, query: str):
+        """Show information about a specific book."""
+        book_info =  library.fetch_book(query)
+        if book_info is None:
+            return Err("Failed to fetch book information. Use !setbook to manually pick the book")
+
+        embed = discord.Embed(
+            title=f"{book_info.title}",
+            description=f"by {book_info.author or 'Unknown'}\nYear: {book_info.year or 'N/A'}\nPages: {book_info.pages or 'N/A'}\nRating: {f'{book_info.rating:.2f}' or 'N/A'}",
+            color=discord.Color.blue(),
+        )
+        await ctx.send(embed=embed)
+
+        embed = discord.Embed(title="📚 Read Book", description="Would you like to read this book as a club? (yes/no)", color=discord.Color.blue())
+        await ctx.send(embed=embed)
+
+        same_person = lambda message: message.author == ctx.author and message.channel == ctx.channel
+        msg = await self.bot.wait_for('message', check=same_person, timeout=30.0)
+
+        if msg.content.lower() not in set(["y", "yes"]):
+            await ctx.send("Book will not be applied to the club.")
+            return
+
+        match r := self.service.create_or_update_book(ctx.channel.id, book_info.title, book_info.author, book_info.year, book_info.pages, book_info.rating):
+            case Ok():
+                if isinstance(ctx.channel, discord.TextChannel):
+                    embed = discord.Embed(title="📚 Rename Channel", description="Would you like to rename the channel? (yes/no)", color=discord.Color.blue())
+                    await ctx.send(embed=embed)
+
+                    msg = await self.bot.wait_for('message', check=same_person, timeout=30.0)
+
+                    if msg.content.lower() not in set(["y", "yes"]):
+                        return r
+                    await ctx.channel.edit(name=f"📚 {book_info.title or 'bokcirkel'}")
+        return r
+
 
     @commands.command()
     async def poll(self, ctx: commands.Context, seconds: int = 30):

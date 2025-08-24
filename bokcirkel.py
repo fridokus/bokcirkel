@@ -32,7 +32,7 @@ def main():
         bot = Bot(intents=intents)
         bot.run(token)
 
-    except Exception as e:
+    except Exception:
         logging.exception("Bot error")
 
 if __name__ == "__main__":

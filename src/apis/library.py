@@ -21,11 +21,11 @@ HEADERS = {
 class Book:
     """Class representing a book."""
     def __init__(self, title, author, year, pages, rating):
-        self.title = title
-        self.author = author
-        self.year = year
-        self.pages = pages
-        self.rating = rating
+        self.title: str = title
+        self.author: str = author
+        self.year: int = year
+        self.pages: int = pages
+        self.rating: float= rating
 
     def __str__(self):
         # Format numeric ratings to 3 decimal points, stripping unnecessary zeros
