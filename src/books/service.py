@@ -531,8 +531,10 @@ class BookCircleService:
         book_club_id: int,
         member: discord.Member | discord.User,
         text: str,
-        rating: Optional[int] = None,
+        rating: int,
     ) -> Result[discord.Embed]:
+        if rating is not None and (rating < 1 or rating > 5):
+            return Err("Rating must be between 1 and 5.")
         with Session(self.engine) as session:
             club = session.get(BookClub, book_club_id)
             if not club:
@@ -663,6 +665,10 @@ class BookCircleService:
                 if club.readers
                 else "No readers yet"
             )
+            ratings = [review.rating if review.rating else 0 for reader in club.readers for review in reader.reviews]
+            discord_average_ratings = None
+            if ratings:
+                discord_average_ratings = sum(ratings)/len(ratings)
             embed = discord.Embed(title=club.book.title)
             embed.add_field(
                 name="Book Info",
@@ -670,7 +676,8 @@ class BookCircleService:
                     f"✍️ Author: {club.book.author or 'Unknown'}\n"
                     f"📅 Year: {club.book.year if club.book.year is not None else 'N/A'}\n"
                     f"📄 Pages: {club.book.pages if club.book.pages is not None else 'N/A'}\n"
-                    f"⭐ Rating: {f"{club.book.rating:.2f}" if club.book.rating is not None else 'N/A'}"
+                    f"⭐ Rating (Hardcover): {f'{club.book.rating:.2f}' if club.book.rating else 'N/A'}\n"
+                    f"⭐ Rating (Discord): {f'{discord_average_ratings:.2f}' if discord_average_ratings else 'N/A'}"
                 ),
                 inline=False,
             )
