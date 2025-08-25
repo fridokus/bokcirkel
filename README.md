@@ -50,7 +50,7 @@ Bokcirkel integrates with the [Hardcover API](https://hardcover.app/) to fetch b
 ## Workflows & Usage
 
 ### 1. **Start Reading**
-- Use `!progress` to set your current page/chapter.
+- Use `!read` to set your current page/chapter.
 - Use `!caughtup` when you reach the club's target.
 
 ### 2. **Suggest & Review**
