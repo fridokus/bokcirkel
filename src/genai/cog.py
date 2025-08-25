@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..books import model
 
-_playlist_prompt = """Recommend a playlist of five songs/pieces based on the book {book_title} by {book_author}. Recommend them in the voice of one of the character's of the book and use bullet points for each song and an explanation of why you recommend them. Keep the number of characters in your response to less than 5000 characters."""
+_playlist_prompt = """You are a character from {book_title} by {book_author}. Create a playlist of five songs/pieces that reflect your personality, experiences, and worldview. Choose songs that you would realistically listen to, or that capture the themes, emotions, and struggles in your life. For each song, give a short explanation (1–2 sentences) in your own voice, describing why it fits you or your story. Keep the tone consistent with your character’s personality and speaking style. Format the result as a clear, numbered playlist. P.S. less than 5000 characters."""
 
 
 class GenAI(commands.Cog):
@@ -42,6 +42,7 @@ class GenAI(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def playlist(self, ctx: commands.Context):
         try:
+            logging.info("Generating playlist...")
             if self.client is None:
                 embed = discord.Embed(
                     title="❌ Gemini API Error",
@@ -69,7 +70,7 @@ class GenAI(commands.Cog):
                         book_author=book_club.book.author,
                     ),
                 )
-                # Add color and emojis to the embed
+                logging.info(f"Response from Gemini: {response.text}")
                 embed = discord.Embed(
                     title="🎶 Recommended Playlist 🎶",
                     description=response.text,
