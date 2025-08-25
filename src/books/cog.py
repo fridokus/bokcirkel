@@ -1,15 +1,16 @@
 import asyncio
 import logging
-from blinker import signal
 from functools import wraps
 from typing import Optional
 
 import discord
+from blinker import signal
 from discord.ext import commands
 from sqlalchemy.orm import Session
 
 from ..apis import library
 from ..result_types import *
+from . import discordviews
 from .model import BookClub, BookClubReaderRole, BookClubReaderState, BookState
 from .rotate_roles import rotate_roles
 from .service import BookCircleService
@@ -338,26 +339,8 @@ class BookCircle(commands.Cog):
     ):
         """Update book information (title/author) by book ID."""
         match r := self.service.create_or_update_book(ctx.channel.id, title, author):
-            case Ok():
-                if isinstance(ctx.channel, discord.TextChannel):
-                    embed = discord.Embed(
-                        title="📚 Rename Channel",
-                        description="Would you like to rename the channel? (yes/no)",
-                        color=discord.Color.blue(),
-                    )
-                    await ctx.send(embed=embed)
-
-                    msg = await self.bot.wait_for(
-                        "message",
-                        check=lambda m: m.author == ctx.author
-                        and m.channel == ctx.channel,
-                        timeout=30.0,
-                    )
-                    if msg.content.lower() not in set(["y", "yes"]):
-                        return r
-
-                    await ctx.channel.edit(name=f"📚 {title or 'bokcirkel'}")
-                return r
+            case Ok(embed):
+                await ctx.send(embed=embed, view=discordviews.RenameChannelView(ctx, title or "bokcirkel"))
             case Err():
                 return r
 
@@ -470,7 +453,7 @@ class BookCircle(commands.Cog):
     @commands.command()
     @send_embed
     async def suggest(
-        self, ctx: commands.Context, title: str, *, author: Optional[str] = None
+        self, ctx: commands.Context, title: str, author: Optional[str] = None
     ):
         """Suggest a book for the club."""
         return self.service.suggest_book(ctx.author.id, title, author)
@@ -508,52 +491,7 @@ class BookCircle(commands.Cog):
         )
         if book_info.img_url:
             embed.set_thumbnail(url=book_info.img_url)
-        await ctx.send(embed=embed)
-
-        embed = discord.Embed(
-            title="📚 Read Book",
-            description="Would you like to read this book as a club? (yes/no)",
-            color=discord.Color.blue(),
-        )
-        await ctx.send(embed=embed)
-
-        same_person = (
-            lambda message: message.author == ctx.author
-            and message.channel == ctx.channel
-        )
-        msg = await self.bot.wait_for("message", check=same_person, timeout=30.0)
-
-        if msg.content.lower() not in set(["y", "yes"]):
-            await ctx.send("Book will not be applied to the club.")
-            return
-
-        # Consider just passing the book_info object.
-        match r := self.service.create_or_update_book(
-            ctx.channel.id,
-            book_info.title,
-            book_info.author,
-            book_info.year,
-            book_info.pages,
-            book_info.rating,
-            book_info.img_url,
-        ):
-            case Ok():
-                if isinstance(ctx.channel, discord.TextChannel):
-                    embed = discord.Embed(
-                        title="📚 Rename Channel",
-                        description="Would you like to rename the channel? (yes/no)",
-                        color=discord.Color.blue(),
-                    )
-                    await ctx.send(embed=embed)
-
-                    msg = await self.bot.wait_for(
-                        "message", check=same_person, timeout=30.0
-                    )
-
-                    if msg.content.lower() not in set(["y", "yes"]):
-                        return r
-                    await ctx.channel.edit(name=f"📚 {book_info.title or 'bokcirkel'}")
-        return r
+        await ctx.send(embed=embed, view=discordviews.ApplyView(self.service, book_info, ctx))
 
     @commands.command()
     async def poll(self, ctx: commands.Context, seconds: int = 30):
@@ -602,12 +540,11 @@ class BookCircle(commands.Cog):
                     match self.service.pop_suggested_book(ctx.channel.id, winner.id):
                         case Ok(BookCircleService.BookAppliedToClub()):
                             await ctx.send(
-                                f"🏆 The winner is '{winner.title}' by {winner.author or 'Unknown'}!"
+                                f"🏆 The winner is '{winner.title}' by {winner.author or 'Unknown'}!",
+                                view=discordviews.RenameChannelView(ctx, winner.title)
                             )
-                            # update channel name
-                            if isinstance(ctx.channel, discord.TextChannel):
-                                await ctx.channel.edit(name=f"📚 {winner.title}")
                 else:
                     await ctx.send("No winner could be determined.")
             case Err(msg):
                 await ctx.send(f"Error: {msg}")
+
