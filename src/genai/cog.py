@@ -76,7 +76,6 @@ class GenAI(commands.Cog):
                     description=response.text,
                     color=discord.Color.purple()
                 )
-                embed.set_footer(text="Enjoy your musical journey! ✨")
                 await ctx.send(embed=embed)
         except:
             logging.exception("Error generating playlist")
