@@ -256,7 +256,7 @@ class BookCircle(commands.Cog):
 
     @commands.command()
     @send_embed
-    async def mybooks(self, ctx: commands.Context) -> Result[discord.Embed]:
+    async def books(self, ctx: commands.Context) -> Result[discord.Embed]:
         """Show all books you have read in any book club."""
         return self.service.get_books_for_user(ctx.author)
 

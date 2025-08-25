@@ -220,6 +220,7 @@ class BookCircleService:
                 )
             return Ok(embed)
 
+
     @try_except_result
     def list_roles(self, book_club_id: int) -> Result[discord.Embed]:
         with Session(self.engine) as session:
@@ -280,6 +281,12 @@ class BookCircleService:
                         value=f"✍️ by {club.book.author or 'Unknown'}",
                         inline=False,
                     )
+            total_pages = sum([club.book.pages for club in clubs if club.book and club.book.pages])
+            embed.add_field(
+                name="Total Pages Read",
+                value=f"📚 {total_pages}",
+                inline=False,
+            )
             return Ok(embed)
 
     @try_except_result
