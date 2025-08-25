@@ -94,8 +94,3 @@ Bokcirkel integrates with the [Hardcover API](https://hardcover.app/) to fetch b
 ## 👤 Credits
 
 Made with ❤️ by Fridokus (Oskar Fridell)
-  
-## Credits
-
-This project was created by Fridokus (Oskar Fridell).
-
