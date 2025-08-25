@@ -457,7 +457,7 @@ class BookCircleService:
 
     @try_except_result
     def create_or_update_book(
-        self, book_club_id: int, title: Optional[str], author: Optional[str] = None
+        self, book_club_id: int, title: Optional[str], author: Optional[str] = None, year: Optional[int] = None, pages: Optional[int] = None, rating: Optional[float] = None, img_url: Optional[str] = None
     ) -> Result[discord.Embed]:
         """Create a new book or update an existing one. Returns Ok(Book) or Err(str)."""
         with Session(self.engine) as session:
@@ -467,7 +467,7 @@ class BookCircleService:
             book = book_club.book
             if book is None:
                 # Create new book
-                book = Book(title=title, author=author)
+                book = Book(title=title, author=author, year=year, pages=pages, rating=rating, img_url=img_url)
                 book_club.book = book
                 session.add(book)
                 session.commit()
@@ -483,6 +483,14 @@ class BookCircleService:
                 book.title = title
             if author is not None:
                 book.author = author
+            if year is not None:
+                book.year = year
+            if pages is not None:
+                book.pages = pages
+            if rating is not None:
+                book.rating = rating
+            if img_url is not None:
+                book.img_url = img_url
             session.commit()
             return Ok(
                 discord.Embed(
@@ -523,8 +531,10 @@ class BookCircleService:
         book_club_id: int,
         member: discord.Member | discord.User,
         text: str,
-        rating: Optional[int] = None,
+        rating: int,
     ) -> Result[discord.Embed]:
+        if rating is not None and (rating < 1 or rating > 5):
+            return Err("Rating must be between 1 and 5.")
         with Session(self.engine) as session:
             club = session.get(BookClub, book_club_id)
             if not club:
@@ -655,7 +665,24 @@ class BookCircleService:
                 if club.readers
                 else "No readers yet"
             )
-            embed = discord.Embed(title=f"📊 Book Club Status: {club.book.title}")
+            ratings = [review.rating if review.rating else 0 for reader in club.readers for review in reader.reviews]
+            discord_average_ratings = None
+            if ratings:
+                discord_average_ratings = sum(ratings)/len(ratings)
+            embed = discord.Embed(title=club.book.title)
+            embed.add_field(
+                name="Book Info",
+                value=(
+                    f"✍️ Author: {club.book.author or 'Unknown'}\n"
+                    f"📅 Year: {club.book.year if club.book.year is not None else 'N/A'}\n"
+                    f"📄 Pages: {club.book.pages if club.book.pages is not None else 'N/A'}\n"
+                    f"⭐ Rating (Hardcover): {f'{club.book.rating:.2f}' if club.book.rating else 'N/A'}\n"
+                    f"⭐ Rating (Discord): {f'{discord_average_ratings:.2f}' if discord_average_ratings else 'N/A'}"
+                ),
+                inline=False,
+            )
+            if club.book.img_url:
+                embed.set_image(url=club.book.img_url)
             embed.add_field(name="State", value=f"📖 {club.state.value}", inline=False)
             embed.add_field(
                 name="Target", value=f"🎯 {club.target or 'N/A'}", inline=False
