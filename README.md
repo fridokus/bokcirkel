@@ -65,9 +65,6 @@ Bokcirkel integrates with the [Hardcover API](https://hardcover.app/) to fetch b
 - If you fall behind, you might get shamed (`!shame`).
 - Keep up streaks for special rewards!
 
-### 5. **Admin Tools**
-- Admins can use `!deleteallchannels` and more (see `!help`).
-
 ---
 
 ## 🌟 Example Achievements
