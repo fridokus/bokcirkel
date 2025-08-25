@@ -72,6 +72,7 @@ class BookCircleService:
             if bcr.state == BookClubReaderState.CAUGHT_UP:
                 return Err("You are already caught up.")
             bcr.state = BookClubReaderState.CAUGHT_UP
+            bcr.progress = club.target
             session.commit()
             user = session.get(User, user_id)
             if user is None:
