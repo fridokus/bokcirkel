@@ -1,63 +1,99 @@
-# Bokcirkel
+<div align="center">
+   <h1>📚 Bokcirkel</h1>
+   <h3>The ✨ chic ✨ Discord bot for book clubs</h3>
+   <img src="https://em-content.zobj.net/source/microsoft-teams/363/books_1f4da.png" width="80" alt="books emoji"/>
+</div>
 
-## Introduction
+---
 
-Bokcirkel is a Discord bot designed to help manage and organize book clubs. It integrates with Discord servers to facilitate book discussions and scheduling, while using PostgreSQL for persistent data storage. This project is intended for anyone who wants to run a book club community on Discord with automated features.
+## 🚀 Features
+
+- 📖 **Track your reading**: Set your progress, catch up, and never lose your place.
+- 🏆 **Achievements**: Earn badges for reading, streaks, reviews, notes, and more!
+- 🔔 **Shame & Streaks**: Stay motivated (or get shamed!) to keep up with your club.
+- 💬 **Suggest, quote, and review**: Share your thoughts, favorite lines, and book ideas.
+- 👑 **Admin tools**: Manage your club with powerful commands.
+
+---
+
+## 📝 Quickstart
+
+```bash
+git clone https://github.com/fridokus/bokcirkel.git
+cd bokcirkel
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
 
-## Deployment/Development
+1. **Create a Discord bot** at [Discord Developer Portal](https://discord.com/developers/applications/)
+2. **Save your bot token** in a file called `.token` in the project root.
+3. **Get a Hardcover API key** from [Hardcover.app](https://hardcover.app/developers) and save it in a file called `.hardcover-api-key` in the project root (the file should contain only the API key).
+4. **Invite the bot** to your server with the right permissions.
+5. **Run the bot:**
+    ```bash
+    python bokcirkel.py
+    ```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/fridokus/bokcirkel.git
-   cd bokcirkel
-   ```
+---
 
-2. **Set up a Python virtual environment (recommended)**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
+## Hardcover API Integration
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+Bokcirkel integrates with the [Hardcover API](https://hardcover.app/) to fetch book data, enrich suggestions, and provide up-to-date info for your club. This means:
+- 📚 Book suggestions are smarter and more accurate
+- 🖼️ Book covers, authors, and details are auto-fetched
+- 🔍 Seamless experience when adding or searching for books
 
-4. **Create a Discord developer application**
-   - Go to [Discord Developer Portal](https://discord.com/developers/applications/)
-   - Create a new application and add a bot to it.
-   - Copy the bot token.
-   - Save the token in a file named `.token` in the project root (same directory as `bokcirkel.py`). The file should contain only the token string.
+---
 
-5. **Invite the bot to your Discord server**
-   - In the Developer Portal, under OAuth2 > URL Generator, select `bot` scope and assign necessary permissions.
-   - Copy the generated URL and use it to invite the bot to your server.
+## Workflows & Usage
 
-6. **Install and configure PostgreSQL**
-   - Install PostgreSQL:
-     ```bash
-     sudo apt-get install postgresql postgresql-contrib
-     ```
-   - Start the PostgreSQL service:
-     ```bash
-     sudo service postgresql start
-     ```
-   - Create a new PostgreSQL user and database (replace `bokcirkeluser` and `bokcirkelpass` with your desired credentials):
-     ```bash
-     sudo -u postgres createuser bokcirkeluser --pwprompt
-     sudo -u postgres createdb bokcirkel_db --owner=bokcirkeluser
-     ```
-   - Update the database credentials in `bokcirkel.py` if you use different values.
+### 1. **Start Reading**
+- Use `!progress` to set your current page/chapter.
+- Use `!caughtup` when you reach the club's target.
 
-7. **Run the bot**
-   ```bash
-   python bokcirkel.py
-   ```
+### 2. **Suggest & Review**
+- Suggest books with `!suggest`.
+- Review finished books with `!review`.
 
-The bot should now connect to Discord and interact with your server as configured.
+### 3. **Track Achievements**
+- See your badges with `!achievements`.
+- Earn rewards for reading, streaks, reviews, notes, quotes, and more!
 
-By default the bot outputs logs to "/var/log/bokcirkel.log"
+### 4. **Stay Motivated**
+- If you fall behind, you might get shamed (`!shame`).
+- Keep up streaks for special rewards!
+
+### 5. **Admin Tools**
+- Admins can use `!deleteallchannels` and more (see `!help`).
+
+---
+
+## 🌟 Example Achievements
+
+| Badge | How to Earn |
+|-------|-------------|
+| 📚 Bookworm | Finish 1 book |
+| 🏅 Avid Reader | Finish 10 books |
+| 🔥 Streak Starter | 3-day reading streak |
+| 😳 Shame Spiral | Be shamed 3 days in a row |
+| 📝 Note Taker | Add 1 note |
+| 💬 Quoter | Add 1 quote |
+| ⭐ Reviewer | Write 1 review |
+
+---
+
+## 💡 Tips
+- Use `!help` in Discord for a quick command guide.
+- Achievements and streaks are tracked automatically.
+- Admins see extra commands in `!help`.
+
+---
+
+## 👤 Credits
+
+Made with ❤️ by Fridokus (Oskar Fridell)
   
 ## Credits
 
