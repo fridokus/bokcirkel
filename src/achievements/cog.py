@@ -22,14 +22,13 @@ class Achievements(commands.Cog):
     async def on_ready(self) -> None:
         logging.info("Achievements Cog is ready.")
         # Load achievement definitions from JSON files
-        
+
         try:
             asyncio.create_task(
                 asyncio.to_thread(load_achievements_from_json, self.engine)
             )
         except Exception:
             logging.exception("Failed to schedule achievements startup tasks")
-
 
     @commands.command()
     async def achievements(self, ctx):

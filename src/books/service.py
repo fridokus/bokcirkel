@@ -220,7 +220,6 @@ class BookCircleService:
                 )
             return Ok(embed)
 
-
     @try_except_result
     def list_roles(self, book_club_id: int) -> Result[discord.Embed]:
         with Session(self.engine) as session:
@@ -281,7 +280,9 @@ class BookCircleService:
                         value=f"✍️ by {club.book.author or 'Unknown'}",
                         inline=False,
                     )
-            total_pages = sum([club.book.pages for club in clubs if club.book and club.book.pages])
+            total_pages = sum(
+                [club.book.pages for club in clubs if club.book and club.book.pages]
+            )
             embed.add_field(
                 name="Total Pages Read",
                 value=f"📚 {total_pages}",
@@ -465,7 +466,14 @@ class BookCircleService:
 
     @try_except_result
     def create_or_update_book(
-        self, book_club_id: int, title: Optional[str], author: Optional[str] = None, year: Optional[int] = None, pages: Optional[int] = None, rating: Optional[float] = None, img_url: Optional[str] = None
+        self,
+        book_club_id: int,
+        title: Optional[str],
+        author: Optional[str] = None,
+        year: Optional[int] = None,
+        pages: Optional[int] = None,
+        rating: Optional[float] = None,
+        img_url: Optional[str] = None,
     ) -> Result[discord.Embed]:
         """Create a new book or update an existing one. Returns Ok(Book) or Err(str)."""
         with Session(self.engine) as session:
@@ -475,7 +483,14 @@ class BookCircleService:
             book = book_club.book
             if book is None:
                 # Create new book
-                book = Book(title=title, author=author, year=year, pages=pages, rating=rating, img_url=img_url)
+                book = Book(
+                    title=title,
+                    author=author,
+                    year=year,
+                    pages=pages,
+                    rating=rating,
+                    img_url=img_url,
+                )
                 book_club.book = book
                 session.add(book)
                 session.commit()
@@ -673,10 +688,14 @@ class BookCircleService:
                 if club.readers
                 else "No readers yet"
             )
-            ratings = [review.rating if review.rating else 0 for reader in club.readers for review in reader.reviews]
+            ratings = [
+                review.rating if review.rating else 0
+                for reader in club.readers
+                for review in reader.reviews
+            ]
             discord_average_ratings = None
             if ratings:
-                discord_average_ratings = sum(ratings)/len(ratings)
+                discord_average_ratings = sum(ratings) / len(ratings)
             embed = discord.Embed(title=club.book.title)
             embed.add_field(
                 name="Book Info",

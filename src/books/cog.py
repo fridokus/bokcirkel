@@ -340,7 +340,10 @@ class BookCircle(commands.Cog):
         """Update book information (title/author) by book ID."""
         match r := self.service.create_or_update_book(ctx.channel.id, title, author):
             case Ok(embed):
-                await ctx.send(embed=embed, view=discordviews.RenameChannelView(ctx, title or "bokcirkel"))
+                await ctx.send(
+                    embed=embed,
+                    view=discordviews.RenameChannelView(ctx, title or "bokcirkel"),
+                )
             case Err():
                 return r
 
@@ -494,7 +497,9 @@ class BookCircle(commands.Cog):
         )
         if book_info.img_url:
             embed.set_thumbnail(url=book_info.img_url)
-        await ctx.send(embed=embed, view=discordviews.ApplyView(self.service, book_info, ctx))
+        await ctx.send(
+            embed=embed, view=discordviews.ApplyView(self.service, book_info, ctx)
+        )
 
     @commands.command()
     async def poll(self, ctx: commands.Context, seconds: int = 30):
@@ -544,10 +549,9 @@ class BookCircle(commands.Cog):
                         case Ok(BookCircleService.BookAppliedToClub()):
                             await ctx.send(
                                 f"🏆 The winner is '{winner.title}' by {winner.author or 'Unknown'}!",
-                                view=discordviews.RenameChannelView(ctx, winner.title)
+                                view=discordviews.RenameChannelView(ctx, winner.title),
                             )
                 else:
                     await ctx.send("No winner could be determined.")
             case Err(msg):
                 await ctx.send(f"Error: {msg}")
-
