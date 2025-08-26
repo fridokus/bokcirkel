@@ -50,11 +50,13 @@ class AchievementService:
             )
             return rows
 
+
 def load_achievements_from_json(engine, achievements_dir=None):
     """Load achievements from JSON files and populate the database."""
     if achievements_dir is None:
         achievements_dir = os.path.join(os.path.dirname(__file__), "achievements")
     from sqlalchemy.orm import Session
+
     with Session(engine) as session:
         count = 0
         for filename in os.listdir(achievements_dir):
@@ -66,18 +68,24 @@ def load_achievements_from_json(engine, achievements_dir=None):
                 for ach in data:
                     count += 1
                     # Upsert by name
-                    existing = session.query(Achievement).filter_by(name=ach["name"]).one_or_none()
+                    existing = (
+                        session.query(Achievement)
+                        .filter_by(name=ach["name"])
+                        .one_or_none()
+                    )
                     if existing:
                         existing.description = ach["description"]
                         existing.icon = ach.get("icon")
                         existing.rule_json = ach["rule"]
                     else:
-                        session.add(Achievement(
-                            name=ach["name"],
-                            description=ach["description"],
-                            icon=ach.get("icon"),
-                            rule_json=ach["rule"]
-                        ))
+                        session.add(
+                            Achievement(
+                                name=ach["name"],
+                                description=ach["description"],
+                                icon=ach.get("icon"),
+                                rule_json=ach["rule"],
+                            )
+                        )
         logging.info(f"Loaded {count} achievements from JSON.")
 
         session.commit()

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from ..result_types import Ok, Err, Result
 from .model import BookClub
 
+
 def rotate_roles(engine, book_club_id: int) -> Result[discord.Embed]:
     """
     Rotate roles among all readers in the book club: each reader gets the next reader's role (cyclic).
@@ -28,6 +29,8 @@ def rotate_roles(engine, book_club_id: int) -> Result[discord.Embed]:
         for reader in readers:
             role = reader.role
             embed.add_field(
-                name=reader.user.name,                                                                                                               value=f"{role.emoji} {role.value}",
-                inline=True,                                                                                                                     )
+                name=reader.user.name,
+                value=f"{role.emoji} {role.value}",
+                inline=True,
+            )
         return Ok(embed)
