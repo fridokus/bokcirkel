@@ -412,6 +412,7 @@ class BookCircle(commands.Cog):
                 await self.review_signal.send_async(
                     None, ctx=ctx, user_id=ctx.author.id
                 )
+                await ctx.message.delete()
         return r
 
     @commands.command()
@@ -422,6 +423,7 @@ class BookCircle(commands.Cog):
         match r := self.service.add_quote(ctx.channel.id, user_id, text):
             case Ok():
                 await self.quote_signal.send_async(None, ctx=ctx, user_id=user_id)
+                await ctx.message.delete()
         return r
 
     @commands.command()
@@ -432,6 +434,7 @@ class BookCircle(commands.Cog):
         match r := self.service.add_note(channel_id, ctx.author, text):
             case Ok():
                 await self.note_signal.send_async(None, ctx=ctx, user_id=ctx.author.id)
+                await ctx.message.delete()
         return r
 
     @commands.command()
