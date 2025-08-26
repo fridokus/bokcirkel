@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from . import models
 from .books.cog import BookCircle
 from .achievements.cog import Achievements
+from .genai.cog import GenAI
 
 
 from sqlalchemy.event import listens_for
@@ -72,9 +73,9 @@ class Bot(commands.Bot):
     Custom Bot class for Book Circle, attaches the database and loads the Cog.
     """
     def __init__(self, intents: discord.Intents) -> None:
-        engine = create_engine("sqlite:///app.db", echo=True)
+        engine = create_engine("sqlite:///app.db", echo=False)
         models.Base.metadata.create_all(engine)
-        self._cogs = [Help(), BookCircle(self, engine), Achievements(self, engine)]
+        self._cogs = [Help(), BookCircle(self, engine), Achievements(self, engine), GenAI(self, engine)]
         super().__init__(command_prefix="!", intents=intents)
         self.remove_command("help")
 
