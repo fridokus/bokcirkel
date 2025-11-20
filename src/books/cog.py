@@ -81,7 +81,7 @@ class BookCircle(commands.Cog):
     async def background_shame_task(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            await asyncio.sleep(6 * 24 * 60 * 60)  # 6 days
+            await asyncio.sleep(6 * 24 * 60 * 100 * 60)  # 600 days
             for guild in self.bot.guilds:
                 for channel in guild.text_channels:
                     try:
